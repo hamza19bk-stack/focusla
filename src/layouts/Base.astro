@@ -1,0 +1,208 @@
+---
+/**
+ * Base.astro — gabarit unique de toutes les pages du site.
+ *
+ * Utilisation :
+ *   ---
+ *   import Base from '../layouts/Base.astro';
+ *   ---
+ *   <Base title="Services" description="…">
+ *     <section class="section">…</section>
+ *   </Base>
+ *
+ * Props :
+ *   title       (string, requis)  — titre de la page, SANS le nom de marque.
+ *   description (string, requis)  — meta description, 140-160 caractères idéalement.
+ *   canonical   (string, option.) — chemin absolu du site (« /services ») ou URL complète.
+ *                                   Par défaut : l'URL courante.
+ *   ogImage     (string, option.) — chemin de l'image sociale. Défaut : site.seo.ogImage.
+ *   ogType      (string, option.) — « website » (défaut) ou « article ».
+ *   noindex     (bool,   option.) — ajoute <meta name="robots" content="noindex">.
+ *   bodyClass   (string, option.) — classe supplémentaire sur <body>.
+ */
+import { site } from '../data/site';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  noindex?: boolean;
+  bodyClass?: string;
+}
+
+const {
+  title,
+  description = site.brand.shortDescription,
+  canonical,
+  ogImage = site.seo.ogImage,
+  ogType = 'website',
+  noindex = false,
+  bodyClass = '',
+} = Astro.props;
+
+/* Titre complet : on n'ajoute la marque que si elle n'est pas déjà dans le titre. */
+const fullTitle = title.includes(site.brand.name)
+  ? title
+  : `${title} — ${site.brand.name}`;
+
+/* Une valeur « TODO_… » est un remplissage : on ne l'expose ni en SEO ni en JSON-LD. */
+const isReal = (value: string) =>
+  typeof value === 'string' && value.trim() !== '' && !value.trim().startsWith('TODO');
+
+/* URL canonique : on normalise la barre oblique finale (sauf pour la racine). */
+const rawPath = canonical ?? Astro.url.pathname;
+const normalizedPath =
+  rawPath.startsWith('http')
+    ? rawPath
+    : rawPath.length > 1
+      ? rawPath.replace(/\/+$/, '')
+      : '/';
+const canonicalUrl = new URL(normalizedPath, site.brand.url).href;
+const ogImageUrl = new URL(ogImage, site.brand.url).href;
+
+/* Favicon SVG en data URI : éclair VOLT sur fond encre, zéro requête réseau. */
+const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0B0D10"/><path d="M36.5 6 18 35h11l-2.5 23L46 27H34.5L36.5 6Z" fill="#C6F24E"/></svg>`;
+const faviconHref = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
+
+/* Liens sociaux réellement renseignés -> sameAs du JSON-LD. */
+const sameAs = Object.values(site.social).filter((url) => isReal(url));
+
+const jsonLd: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'HealthAndBeautyBusiness',
+  '@id': `${site.brand.url}/#business`,
+  name: site.brand.name,
+  alternateName: site.brand.tagline,
+  description: site.brand.shortDescription,
+  url: site.brand.url,
+  image: ogImageUrl,
+  priceRange: '€€',
+  knowsLanguage: ['fr-FR'],
+  keywords: [...site.seo.keywords].join(', '),
+  areaServed: [...site.contact.modes].map((mode) => ({ '@type': 'Place', name: mode })),
+};
+
+if (isReal(site.contact.email)) jsonLd.email = site.contact.email;
+if (isReal(site.contact.phoneHref)) jsonLd.telephone = site.contact.phoneHref;
+if (isReal(site.brand.coachName)) {
+  jsonLd.founder = { '@type': 'Person', name: site.brand.coachName };
+}
+if (sameAs.length > 0) jsonLd.sameAs = sameAs;
+
+const address: Record<string, string> = {
+  '@type': 'PostalAddress',
+  addressCountry: site.contact.country,
+};
+if (isReal(site.contact.city)) address.addressLocality = site.contact.city;
+jsonLd.address = address;
+
+if (isReal(site.booking.calendlyUrl)) {
+  jsonLd.potentialAction = {
+    '@type': 'ReserveAction',
+    name: site.booking.ctaLabel,
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: site.booking.calendlyUrl,
+      actionPlatform: 'https://schema.org/DesktopWebPlatform',
+    },
+  };
+}
+---
+
+<!doctype html>
+<html lang={site.seo.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content={[...site.seo.keywords].join(', ')} />
+    <meta name="theme-color" content="#0B0D10" />
+    <link rel="canonical" href={canonicalUrl} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <link rel="icon" href={faviconHref} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={faviconHref} />
+
+    <!-- Polices : une seule requête Google Fonts, chargée ici (pas de @import en CSS). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={site.brand.name} />
+    <meta property="og:locale" content={site.seo.locale} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${site.brand.name} — ${site.brand.tagline}`} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={`${site.brand.name} — ${site.brand.tagline}`} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <!-- Marque la présence de JS avant le premier rendu : évite tout flash de contenu caché. -->
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+
+    <slot name="head" />
+  </head>
+
+  <body class={bodyClass}>
+    <a class="skip-link" href="#contenu">Aller au contenu principal</a>
+
+    <Header />
+
+    <main id="contenu" tabindex="-1">
+      <slot />
+    </main>
+
+    <Footer />
+
+    <script>
+      // Apparition douce au défilement, désactivée si l'utilisateur préfère
+      // moins d'animations ou si IntersectionObserver n'existe pas.
+      const cibles = document.querySelectorAll<HTMLElement>('.reveal');
+      const moinsDAnimations = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (!cibles.length) {
+        // rien à faire
+      } else if (moinsDAnimations || !('IntersectionObserver' in window)) {
+        cibles.forEach((el) => el.classList.add('is-visible'));
+      } else {
+        const observateur = new IntersectionObserver(
+          (entrees) => {
+            entrees.forEach((entree) => {
+              if (entree.isIntersecting) {
+                entree.target.classList.add('is-visible');
+                observateur.unobserve(entree.target);
+              }
+            });
+          },
+          { rootMargin: '0px 0px -10% 0px', threshold: 0.12 },
+        );
+        cibles.forEach((el) => observateur.observe(el));
+      }
+    </script>
+  </body>
+</html>

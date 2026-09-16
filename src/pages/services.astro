@@ -1,0 +1,710 @@
+---
+/**
+ * Page « Services » — src/pages/services.astro
+ *
+ * Structure : hero + quatre accompagnements détaillés + socle commun
+ * + déroulé en quatre étapes + FAQ (<details> natifs) + appel à l'action.
+ *
+ * RÈGLES RESPECTÉES :
+ *   - aucun prix, aucun montant, aucune durée d'engagement chiffrée ;
+ *   - aucune coordonnée en dur (tout vient de src/data/site.ts) ;
+ *   - un seul <h1>, puis <h2> par section et <h3> dans les cartes.
+ */
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import { site } from '../data/site';
+
+/* Un jeton « TODO_… » est un gabarit : il ne doit jamais s'afficher. */
+const affichable = (valeur: string) =>
+  valeur.trim() !== '' && !valeur.trim().startsWith('TODO');
+
+const ville = affichable(site.contact.city) ? site.contact.city : '';
+
+/* Espace insécable : les entités HTML ne sont pas décodées dans une valeur
+   d'attribut de composant ni dans une chaîne JavaScript. */
+const nb = ' ';
+
+/* Modalités d'accompagnement : la liste vient de la configuration. */
+const modes = [...site.contact.modes];
+
+/* Navigation : chemins repris de site.nav, jamais écrits en dur. */
+const versReservation = site.nav.find((item) => item.href === '/reservation');
+const versContact = site.nav.find((item) => item.href === '/contact');
+const lienReservation = versReservation?.href ?? '/reservation';
+const lienContact = versContact?.href ?? '/contact';
+
+/* Phrase de repli tant que la ville n'est pas renseignée. */
+const lieu = ville
+  ? `Séances en présentiel à ${ville}, en visio et en programme écrit partout ailleurs.`
+  : 'Séances en présentiel, en visio ou en programme écrit, selon ce qui tient dans ta semaine.';
+
+/* Raccourcis vers chaque accompagnement (ancrages de la page). */
+const offres = [
+  { id: 'presentiel', libelle: 'Présentiel' },
+  { id: 'visio', libelle: 'Visio' },
+  { id: 'programme', libelle: 'Programme écrit' },
+  { id: 'nutrition', libelle: 'Nutrition' },
+];
+
+/* -------------------------------------------------------------------- FAQ
+   Source unique : le rendu HTML et le balisage FAQPage lisent le même tableau. */
+const faq = [
+  {
+    q: `Faut-il déjà être sportif pour commencer${nb}?`,
+    r: `Non, et c’est rarement le cas. Beaucoup de personnes que j’accompagne n’ont pas mis les pieds dans une salle depuis des années, ou n’y sont jamais allées. Le bilan sert exactement à ça${nb}: partir de ton niveau réel plutôt que d’un niveau supposé. La première séance reste volontairement raisonnable — tu dois pouvoir marcher normalement le lendemain.`,
+  },
+  {
+    q: `Comment se passe la première séance${nb}?`,
+    r: `On commence assis, pas à la barre${nb}: parcours sportif, blessures passées, douleurs actuelles, sommeil, emploi du temps. Viennent ensuite quelques mouvements simples pour évaluer mobilité, équilibre et coordination. Tu repars avec une direction claire, un objectif réaliste et la façon dont on va mesurer les progrès.`,
+  },
+  {
+    q: `Où se déroulent les séances en présentiel${nb}?`,
+    r: ville
+      ? `À ${ville} et dans ses environs${nb}: en salle, à domicile lorsque l’espace le permet, ou en extérieur quand la météo s’y prête. Le matériel nécessaire reste volontairement minimal — on s’adapte au lieu, pas l’inverse.`
+      : `En salle, à domicile lorsque l’espace le permet, ou en extérieur quand la météo s’y prête. Le matériel nécessaire reste volontairement minimal — on s’adapte au lieu, pas l’inverse. Écris-moi pour connaître le secteur couvert.`,
+  },
+  {
+    q: `Combien de séances par semaine faut-il prévoir${nb}?`,
+    r: `Deux à trois séances hebdomadaires suffisent à la grande majorité des objectifs, à condition de les tenir dans la durée. Mieux vaut deux séances réellement faites que cinq séances planifiées et trois abandonnées. La fréquence se décide ensemble au bilan, en fonction de ton agenda réel — pas de celui que tu aimerais avoir.`,
+  },
+  {
+    q: `Je n’ai presque pas de matériel chez moi, est-ce bloquant${nb}?`,
+    r: `Pas du tout. Un tapis, l’espace d’un tapis de yoga et éventuellement une paire d’élastiques suffisent à progresser longtemps${nb}: ton poids de corps offre assez de variations pour construire de la force et du souffle. Si tu t’équipes ou rejoins une salle plus tard, le programme s’adapte sans repartir de zéro.`,
+  },
+  {
+    q: `L’accompagnement nutritionnel, c’est un régime${nb}?`,
+    r: `Non. Aucun aliment interdit, aucune pesée obligatoire. On travaille des repères simples — composition des assiettes, régularité, hydratation, organisation autour des séances — pour que ça tienne même quand la semaine dérape. Il s’agit d’hygiène de vie${nb}: cet accompagnement ne remplace ni un médecin ni un diététicien-nutritionniste, et je t’oriente vers eux si ta situation le demande.`,
+  },
+];
+
+/* Balisage FAQPage : autorisé par le contrat via le slot « head »
+   (le layout se charge déjà du bloc LocalBusiness). */
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map(({ q, r }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: r },
+  })),
+};
+
+const description = `Coaching individuel en présentiel, séances en visio, programme d’entraînement sur mesure et accompagnement nutritionnel${nb}: quatre formats, un même suivi, adaptés à ton quotidien.`;
+---
+
+<Base title="Services" description={description} canonical="/services">
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+
+  {/* ------------------------------------------------------------------ HERO */}
+  <section class="section section--tight hero" aria-labelledby="hero-titre">
+    <div class="container">
+      <div class="stack stack--m measure">
+        <p class="eyebrow animate-fade-up">Les accompagnements</p>
+
+        <h1 id="hero-titre" class="animate-fade-up delay-1">
+          Quatre façons<br /><span class="mark">de progresser</span>
+        </h1>
+
+        <p class="lead animate-fade-up delay-2">
+          Présentiel, visio, programme écrit, nutrition&nbsp;: le format change, l’exigence
+          reste la même. Chaque accompagnement démarre par un bilan, se construit autour de
+          tes contraintes réelles et s’ajuste au fil des semaines.
+        </p>
+
+        <div class="cluster animate-fade-up delay-3">
+          <a class="btn btn--primary btn--lg" href={lienReservation}>{site.booking.ctaLabel}</a>
+          <a class="btn btn--ghost btn--lg" href={lienContact}>Poser une question</a>
+        </div>
+
+        <p class="text-muted hero__note animate-fade-up delay-3">{site.booking.ctaNote}</p>
+
+        <ul class="cluster cluster--xs hero__modes animate-fade-up delay-4" role="list">
+          {modes.map((mode) => <li class="chip chip--dot">{mode}</li>)}
+        </ul>
+      </div>
+
+      <nav class="hero__jump animate-fade delay-4" aria-label="Aller à un accompagnement">
+        <ul class="cluster cluster--xs" role="list">
+          {
+            offres.map((offre) => (
+              <li>
+                <a class="btn btn--quiet btn--sm" href={`#${offre.id}`}>
+                  {offre.libelle}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </div>
+  </section>
+
+  {/* -------------------------------------------------------------- LES OFFRES */}
+  <Section
+    id="offres"
+    class="section--rule"
+    eyebrow="Le détail"
+    title="Choisis ton format"
+    subtitle={lieu}
+  >
+    <div class="grid grid--2 grid--gap-l">
+      {/* ------------------------------------------------ 1. PRÉSENTIEL */}
+      <article
+        class="card card--pad-l card--accent offer reveal"
+        id="presentiel"
+        aria-labelledby="presentiel-titre"
+      >
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M3 9.5v5M6 7v10M18 7v10M21 9.5v5M6 12h12"></path>
+          </svg>
+        </span>
+
+        <h3 class="card__title" id="presentiel-titre">Coaching individuel en présentiel</h3>
+
+        <p class="card__text">
+          En tête-à-tête, du premier échauffement à la dernière série. Je corrige la posture
+          en direct, je dose l’intensité selon ta forme du jour et je t’apprends à t’entraîner
+          seul, proprement, sans te blesser.
+        </p>
+
+        <h4 class="offer__label">Ce qui est inclus</h4>
+        <ul class="list-check">
+          <li>Bilan initial&nbsp;: antécédents, mobilité, niveau de départ</li>
+          <li>Séances encadrées en salle, à domicile ou en extérieur</li>
+          <li>Correction technique mouvement par mouvement</li>
+          <li>Programme réécrit à la fin de chaque cycle</li>
+          <li>Points d’étape notés&nbsp;: charges, répétitions, sensations</li>
+        </ul>
+
+        <div class="offer__for">
+          <p class="offer__for-label">Pour qui&nbsp;?</p>
+          <p class="offer__for-text">
+            Tu repars de zéro, tu doutes de ta technique ou tu as besoin d’un rendez-vous
+            posé dans l’agenda pour t’y tenir vraiment.
+          </p>
+        </div>
+
+        <p class="card__foot">
+          <a class="btn btn--primary" href={lienReservation}>Réserver une séance en présentiel</a>
+        </p>
+      </article>
+
+      {/* ----------------------------------------------------- 2. VISIO */}
+      <article
+        class="card card--pad-l offer reveal"
+        id="visio"
+        aria-labelledby="visio-titre"
+        style="--reveal-delay: 90ms"
+      >
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <rect x="3" y="6" width="12.5" height="12" rx="2.5"></rect>
+            <path d="M15.5 10.6l5.5-3v8.8l-5.5-3Z"></path>
+          </svg>
+        </span>
+
+        <h3 class="card__title" id="visio-titre">Coaching en visio, à distance</h3>
+
+        <p class="card__text">
+          Le même accompagnement depuis ton salon, ta salle ou une chambre d’hôtel. Caméra
+          allumée, je mène la séance en direct, je tiens les temps de repos et je corrige ce
+          que je vois, série après série.
+        </p>
+
+        <h4 class="offer__label">Ce qui est inclus</h4>
+        <ul class="list-check">
+          <li>Séance guidée en direct, échauffement et retour au calme compris</li>
+          <li>Adaptation au matériel dont tu disposes — ou sans matériel</li>
+          <li>Vidéos de référence pour chaque exercice du plan</li>
+          <li>Relecture de tes vidéos d’exécution entre deux rendez-vous</li>
+          <li>Compte rendu écrit après la séance, avec les points à travailler</li>
+        </ul>
+
+        <div class="offer__for">
+          <p class="offer__for-label">Pour qui&nbsp;?</p>
+          <p class="offer__for-text">
+            Tu te déplaces souvent, tes horaires bougent ou tu habites loin — et tu veux
+            quand même quelqu’un en face de toi pendant la séance.
+          </p>
+        </div>
+
+        <p class="card__foot">
+          <a class="btn btn--ghost" href={lienReservation}>Réserver une séance en visio</a>
+        </p>
+      </article>
+
+      {/* ------------------------------------------------- 3. PROGRAMME */}
+      <article
+        class="card card--pad-l offer reveal"
+        id="programme"
+        aria-labelledby="programme-titre"
+        style="--reveal-delay: 120ms"
+      >
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <rect x="4.5" y="5" width="15" height="15.5" rx="2.5"></rect>
+            <path d="M9 5V4a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4v1"></path>
+            <path d="M8.5 11.5h7M8.5 15.5h4.5"></path>
+          </svg>
+        </span>
+
+        <h3 class="card__title" id="programme-titre">Programme d’entraînement personnalisé</h3>
+
+        <p class="card__text">
+          Un plan écrit pour toi, pas un document générique recopié. Séances, séries,
+          répétitions, temps de repos, progression planifiée&nbsp;: tu ouvres ton téléphone
+          et tu sais exactement quoi faire en arrivant.
+        </p>
+
+        <h4 class="offer__label">Ce qui est inclus</h4>
+        <ul class="list-check">
+          <li>Entretien de cadrage&nbsp;: objectif, contraintes, matériel disponible</li>
+          <li>Plan structuré en cycles, avec la progression déjà prévue</li>
+          <li>Exercices de remplacement quand une machine est occupée</li>
+          <li>Repères d’intensité clairs&nbsp;: tempo, ressenti, marge de répétitions</li>
+          <li>Révision du plan à chaque fin de cycle, d’après tes retours</li>
+        </ul>
+
+        <div class="offer__for">
+          <p class="offer__for-label">Pour qui&nbsp;?</p>
+          <p class="offer__for-text">
+            Tu es autonome et tu t’entraînes déjà, mais tu tournes en rond faute d’un plan
+            construit et d’une progression organisée.
+          </p>
+        </div>
+
+        <p class="card__foot">
+          <a class="btn btn--ghost" href={lienReservation}>Demander mon programme</a>
+        </p>
+      </article>
+
+      {/* ------------------------------------------------- 4. NUTRITION */}
+      <article
+        class="card card--pad-l offer reveal"
+        id="nutrition"
+        aria-labelledby="nutrition-titre"
+        style="--reveal-delay: 150ms"
+      >
+        <span class="icon-badge icon-badge--2" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M12 8.1c-1.5-1.4-4.2-1.4-5.5.5-1.4 2-.8 5.3 1.1 7.6 1 1.2 2 2 2.8 2 .6 0 1-.3 1.6-.3s1 .3 1.6.3c.8 0 1.8-.8 2.8-2 1.9-2.3 2.5-5.6 1.1-7.6-1.3-1.9-4-1.9-5.5-.5Z"></path>
+            <path d="M12 8.1V5.4M12 5.4c1.7 0 2.7-1.1 2.7-2.6-1.7 0-2.7 1.1-2.7 2.6Z"></path>
+          </svg>
+        </span>
+
+        <h3 class="card__title" id="nutrition-titre">Accompagnement nutritionnel</h3>
+
+        <p class="card__text">
+          Pas de régime, pas d’aliment interdit, pas de balance à sortir à chaque repas. On
+          part de ce que tu manges déjà, on ajuste ce qui freine ta progression et on installe
+          des habitudes tenables, y compris les semaines compliquées.
+        </p>
+
+        <h4 class="offer__label">Ce qui est inclus</h4>
+        <ul class="list-check">
+          <li>Analyse de tes habitudes actuelles, sans jugement</li>
+          <li>Repères simples pour composer tes assiettes au quotidien</li>
+          <li>Organisation autour des séances et des jours de repos</li>
+          <li>Idées de repas rapides et de courses réalistes</li>
+          <li>Suivi régulier pour ajuster au fil des semaines</li>
+        </ul>
+
+        <div class="offer__for">
+          <p class="offer__for-label">Pour qui&nbsp;?</p>
+          <p class="offer__for-text">
+            Tu t’entraînes sérieusement mais les résultats plafonnent, ou tu veux sortir de
+            l’enchaînement des régimes qui ne tiennent jamais.
+          </p>
+        </div>
+
+        <p class="card__meta offer__note">
+          Accompagnement d’hygiène de vie&nbsp;: il ne remplace ni un médecin ni un
+          diététicien-nutritionniste.
+        </p>
+
+        <p class="card__foot">
+          <a class="btn btn--ghost" href={lienContact}>En parler avant de commencer</a>
+        </p>
+      </article>
+    </div>
+  </Section>
+
+  {/* ------------------------------------------------------------ SOCLE COMMUN */}
+  <Section
+    id="socle"
+    variant="alt"
+    eyebrow="Quel que soit le format"
+    title="Ce qui ne change jamais"
+    subtitle={`Quatre engagements présents dans chaque accompagnement${nb}: c’est ce qui fait tenir un programme au-delà des premières semaines.`}
+  >
+    <div class="grid grid--4 grid--gap-s">
+      <article class="card card--hover reveal">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <rect x="5" y="4.5" width="14" height="15" rx="2.5"></rect>
+            <path d="M8.5 10.6l2.2 2.2 4.5-4.6M8.5 16h5"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Un bilan avant tout</h3>
+        <p class="card__text">
+          Aucune séance ne démarre sans avoir posé ton point de départ, tes antécédents et
+          un objectif que l’on sait mesurer.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 80ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M20 12a8 8 0 1 1-2.6-5.9"></path>
+            <path d="M20 4v4h-4"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Un plan qui évolue</h3>
+        <p class="card__text">
+          Ton programme est révisé à chaque fin de cycle, d’après tes retours et tes mesures.
+          Rien n’est figé, surtout pas une routine qui ne donne plus rien.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 160ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M20.5 12.5c0 3.6-3.5 6.5-7.8 6.5-.9 0-1.8-.1-2.6-.4L5 20.5l1.5-3.4C4.9 16 4 14.4 4 12.5 4 8.9 7.5 6 11.8 6s8.7 2.9 8.7 6.5Z"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Un canal direct</h3>
+        <p class="card__text">
+          Une question entre deux séances, un doute sur un mouvement&nbsp;? Tu écris, je
+          réponds. Pas de robot, pas de file d’attente.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 240ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M4 19.5h16"></path>
+            <path d="M7 19.5v-6M12 19.5V8.5M17 19.5v-9"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Des progrès mesurés</h3>
+        <p class="card__text">
+          Charges, répétitions, souffle, sensations&nbsp;: on suit des repères concrets, pas
+          seulement le chiffre affiché par la balance.
+        </p>
+      </article>
+    </div>
+  </Section>
+
+  {/* ------------------------------------------------------------- DÉROULEMENT */}
+  <Section
+    id="deroulement"
+    eyebrow="Comment ça se passe"
+    title="Du premier message à la première victoire"
+    subtitle={`Aucune étape surprise${nb}: tu sais dès le départ ce qui t’attend et ce qu’on attend de toi.`}
+  >
+    <a slot="actions" class="btn btn--ghost" href={lienReservation}>
+      {site.booking.ctaLabel}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M4 12h15M13 6l6 6-6 6"></path>
+      </svg>
+    </a>
+
+    <ol class="grid grid--2 grid--gap-s steps" role="list">
+      <li class="card card--hover step reveal">
+        <span class="step-number" aria-hidden="true">1</span>
+        <h3 class="card__title">Le premier échange</h3>
+        <p class="card__text">
+          Tu réserves un créneau découverte en ligne ou tu m’écris. On parle de ton objectif,
+          de ton emploi du temps et surtout de ce que tu as déjà essayé — et de la raison pour
+          laquelle ça n’a pas tenu.
+        </p>
+      </li>
+
+      <li class="card card--hover step reveal" style="--reveal-delay: 80ms">
+        <span class="step-number" aria-hidden="true">2</span>
+        <h3 class="card__title">Le bilan</h3>
+        <p class="card__text">
+          Antécédents, douleurs éventuelles, mobilité, niveau de départ, matériel et lieu
+          d’entraînement. On fixe ensemble un objectif atteignable et la manière exacte dont
+          on le mesurera.
+        </p>
+      </li>
+
+      <li class="card card--hover step reveal" style="--reveal-delay: 160ms">
+        <span class="step-number" aria-hidden="true">3</span>
+        <h3 class="card__title">Le plan</h3>
+        <p class="card__text">
+          Je construis ton accompagnement&nbsp;: format, fréquence réaliste, contenu des
+          séances, enchaînement des cycles. Tu le reçois expliqué, jamais envoyé sans un mot.
+        </p>
+      </li>
+
+      <li class="card card--hover step reveal" style="--reveal-delay: 240ms">
+        <span class="step-number" aria-hidden="true">4</span>
+        <h3 class="card__title">L’entraînement et les points d’étape</h3>
+        <p class="card__text">
+          On enchaîne les séances, je corrige et j’ajuste l’intensité. À chaque fin de cycle,
+          on compare avec le point de départ&nbsp;: on garde ce qui fonctionne, on change le
+          reste.
+        </p>
+      </li>
+    </ol>
+
+    <p class="text-muted deroulement__note">{lieu}</p>
+  </Section>
+
+  {/* --------------------------------------------------------------------- FAQ */}
+  <Section
+    id="faq"
+    variant="alt"
+    width="narrow"
+    eyebrow="Questions fréquentes"
+    title="Ce qu’on me demande le plus"
+    subtitle="Les réponses aux hésitations les plus courantes avant de se lancer."
+  >
+    <div class="faq">
+      {
+        faq.map((item, index) => (
+          <details class="faq__item reveal" style={`--reveal-delay: ${index * 60}ms`}>
+            <summary class="faq__summary">
+              <h3 class="faq__q">{item.q}</h3>
+              <span class="faq__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" focusable="false">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </span>
+            </summary>
+            <div class="faq__answer">
+              <p>{item.r}</p>
+            </div>
+          </details>
+        ))
+      }
+    </div>
+
+    <p class="text-muted faq__more">
+      Ta question n’est pas dans la liste&nbsp;?
+      <a href={lienContact}>Écris-moi, je réponds personnellement.</a>
+    </p>
+  </Section>
+
+  {/* --------------------------------------------------------------- CTA FINAL */}
+  <section class="section section--tight" aria-labelledby="cta-titre">
+    <div class="container">
+      <div class="callout reveal">
+        <div class="stack stack--m measure">
+          <p class="eyebrow">Passer à l’action</p>
+          <h2 id="cta-titre">Encore hésitant&nbsp;?</h2>
+          <p class="lead">
+            Le plus simple reste d’en parler. Une première séance pour faire le point, poser
+            un objectif réaliste et choisir le format qui te correspond vraiment&nbsp;— tu
+            repars avec une direction claire, même si tu t’arrêtes là.
+          </p>
+          <div class="cluster">
+            <a class="btn btn--primary btn--lg" href={lienReservation}>{site.booking.ctaLabel}</a>
+            <a class="btn btn--ghost btn--lg" href={lienContact}>Poser une question</a>
+          </div>
+          <p class="text-muted cta__note">{site.booking.ctaNote}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ------------------------------------------------------------------ HERO */
+  .hero {
+    padding-block-start: var(--space-xl);
+  }
+
+  .hero__note {
+    font-size: max(0.875rem, var(--step--1));
+    max-width: var(--measure-tight);
+  }
+
+  .hero__modes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .hero__jump {
+    margin-top: var(--space-l);
+    padding-top: var(--space-s);
+    border-top: 1px solid var(--c-border);
+  }
+
+  .hero__jump ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  @media (min-width: 62em) {
+    .hero {
+      padding-block-start: var(--space-2xl);
+    }
+  }
+
+  /* ---------------------------------------------------------------- OFFRES */
+  /* L'en-tête collant ne doit pas masquer la carte visée par une ancre. */
+  .offer {
+    scroll-margin-top: calc(var(--header-h) + var(--space-m));
+  }
+
+  .offer__label {
+    margin: var(--space-2xs) 0 0;
+    font-size: max(0.875rem, var(--step--1));
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--c-text);
+  }
+
+  .offer__for {
+    margin-top: var(--space-2xs);
+    padding: var(--space-s);
+    border-radius: var(--radius-m);
+    background: var(--c-surface-2);
+    border-left: 3px solid var(--c-accent-dim);
+  }
+
+  .offer__for-label {
+    margin: 0 0 var(--space-3xs);
+    font-family: var(--font-display);
+    font-size: max(0.875rem, var(--step--1));
+    font-weight: 500;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--c-accent);
+  }
+
+  .offer__for-text {
+    margin: 0;
+    color: var(--c-text-soft);
+  }
+
+  .offer__note {
+    margin-top: var(--space-2xs);
+    font-size: max(0.875rem, var(--step--1));
+  }
+
+  /* ----------------------------------------------------------- DÉROULEMENT */
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .step {
+    gap: var(--space-2xs);
+  }
+
+  .deroulement__note {
+    margin-top: var(--space-l);
+    max-width: var(--measure-tight);
+    font-size: max(0.875rem, var(--step--1));
+  }
+
+  /* ------------------------------------------------------------------- FAQ */
+  .faq {
+    display: grid;
+    gap: var(--space-xs);
+  }
+
+  .faq__item {
+    border: var(--border-1);
+    border-radius: var(--radius-m);
+    background-color: var(--c-surface);
+    background-image: var(--grad-surface);
+    overflow: hidden;
+  }
+
+  .faq__item[open] {
+    border-color: color-mix(in srgb, var(--c-accent) 35%, transparent);
+  }
+
+  .faq__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    min-height: 56px;
+    padding: var(--space-s) var(--space-m);
+    cursor: pointer;
+    list-style: none;
+    transition: background-color var(--transition);
+  }
+
+  /* Masque le triangle natif (WebKit / anciens Safari). */
+  .faq__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__summary:hover {
+    background-color: var(--c-surface-2);
+  }
+
+  .faq__summary:focus-visible {
+    outline: 3px solid var(--c-accent-bright);
+    outline-offset: -3px;
+  }
+
+  .faq__q {
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 500;
+    line-height: var(--leading-snug);
+    text-transform: none;
+    color: var(--c-text);
+  }
+
+  .faq__icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    color: var(--c-accent);
+    background: var(--c-accent-soft);
+    border: 1px solid color-mix(in srgb, var(--c-accent) 30%, transparent);
+    transition: transform var(--transition);
+  }
+
+  .faq__icon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .faq__item[open] .faq__icon {
+    transform: rotate(135deg);
+  }
+
+  .faq__answer {
+    padding: 0 var(--space-m) var(--space-m);
+    max-width: var(--measure);
+  }
+
+  .faq__answer p {
+    margin: 0;
+    color: var(--c-text-soft);
+  }
+
+  .faq__more {
+    margin-top: var(--space-l);
+    font-size: max(0.875rem, var(--step--1));
+  }
+
+  .faq__more a {
+    color: var(--c-accent);
+    text-underline-offset: 0.25em;
+  }
+
+  /* ---------------------------------------------------------------- DIVERS */
+  .cta__note {
+    font-size: max(0.875rem, var(--step--1));
+  }
+</style>

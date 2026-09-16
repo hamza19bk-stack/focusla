@@ -1,0 +1,762 @@
+---
+/**
+ * Contact — src/pages/contact.astro
+ *
+ * Page de contact SANS formulaire (décision client : aucun backend).
+ * Tout passe par des liens directs : mailto:, tel:, WhatsApp et réseaux sociaux.
+ *
+ * Règles appliquées :
+ *  - aucune coordonnée en dur : tout vient de src/data/site.ts ;
+ *  - un réseau social vide n'affiche aucun lien (et si aucun n'est renseigné,
+ *    un encart de repli élégant prend la place de la grille) ;
+ *  - une valeur « TODO_… » (ville, nom du coach) n'est jamais rendue telle quelle.
+ */
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import { site } from '../data/site';
+
+/* Une valeur « TODO_… » est un gabarit : on ne l'affiche jamais telle quelle. */
+const affichable = (v: string) => v.trim() !== '' && !v.trim().startsWith('TODO_');
+const ville = affichable(site.contact.city) ? site.contact.city : '';
+
+/* Espace insécable pour les chaînes JS : les entités HTML ne sont pas décodées
+   dans une valeur d'attribut de composant ni dans une expression. */
+const nb = ' ';
+
+/* Coordonnées : toujours depuis site.ts, jamais en dur. */
+const emailHref = `mailto:${site.contact.email}`;
+const telHref = `tel:${site.contact.phoneHref}`;
+const whatsapp: string = site.social.whatsapp;
+
+/* E-mail pré-rempli : le visiteur n'a plus qu'à compléter les trois lignes utiles. */
+const sujetMail = `Question — ${site.brand.name}`;
+const corpsMail = [
+  'Bonjour,',
+  '',
+  '- Prénom :',
+  '- Mon objectif en une phrase :',
+  '- Format qui m’arrangerait (présentiel, visio, programme à distance) :',
+  '- Mes disponibilités habituelles :',
+  '',
+  'Ma question :',
+  '',
+  'Merci d’avance,',
+].join('\n');
+const emailQuestionHref = `${emailHref}?subject=${encodeURIComponent(
+  sujetMail,
+)}&body=${encodeURIComponent(corpsMail)}`;
+
+/* Modalités d'accompagnement (chips), depuis la config. */
+const modes = [...site.contact.modes];
+
+/* Phrase de zone d'intervention : repli tant que la ville n'est pas renseignée. */
+const zoneTitre = ville ? `${ville} et ses alentours` : 'Près de chez toi, ou à distance';
+const zonePhrase = ville
+  ? `Les séances en présentiel se déroulent à ${ville} et dans les communes voisines${nb}: à domicile, en extérieur ou dans une salle partenaire, selon ton objectif et le matériel nécessaire.`
+  : `Les séances en présentiel se déroulent dans le secteur${nb}: à domicile, en extérieur ou dans une salle partenaire, selon ton objectif et le matériel nécessaire. Ailleurs en ${site.contact.country}, la visio et les programmes à distance prennent le relais.`;
+
+/* Icônes SVG inline des réseaux (24x24, currentColor) — aucune dépendance externe. */
+const iconesReseaux: Record<string, string> = {
+  instagram:
+    '<path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.06 1.8.25 2.2.41.6.22 1 .48 1.4.9.4.4.7.8.9 1.4.16.4.35 1 .4 2.2.07 1.3.07 1.7.07 4.9s0 3.6-.07 4.9c-.05 1.2-.24 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.16-1 .35-2.2.41-1.3.07-1.7.07-4.9.07s-3.6 0-4.9-.07c-1.2-.06-1.8-.25-2.2-.41-.6-.22-1-.48-1.4-.9-.4-.4-.7-.8-.9-1.4-.16-.4-.35-1-.41-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.06-1.2.25-1.8.41-2.2.22-.6.48-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.16 1-.35 2.2-.41C8.4 2.2 8.8 2.2 12 2.2Zm0 1.8c-3.14 0-3.5.01-4.74.07-.9.04-1.4.2-1.72.32-.43.17-.74.37-1.06.69-.32.32-.52.63-.69 1.06-.13.32-.28.82-.32 1.72C3.41 8.9 3.4 9.26 3.4 12s.01 3.1.07 4.34c.04.9.2 1.4.32 1.72.17.43.37.74.69 1.06.32.32.63.52 1.06.69.32.13.82.28 1.72.32 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c.9-.04 1.4-.2 1.72-.32.43-.17.74-.37 1.06-.69.32-.32.52-.63.69-1.06.13-.32.28-.82.32-1.72.06-1.24.07-1.6.07-4.34s-.01-3.1-.07-4.34c-.04-.9-.2-1.4-.32-1.72a2.9 2.9 0 0 0-.69-1.06 2.9 2.9 0 0 0-1.06-.69c-.32-.13-.82-.28-1.72-.32C15.5 4.01 15.14 4 12 4Zm0 3.1a4.9 4.9 0 1 1 0 9.8 4.9 4.9 0 0 1 0-9.8Zm0 1.8a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2Zm5.1-.4a1.15 1.15 0 1 1 0-2.3 1.15 1.15 0 0 1 0 2.3Z"/>',
+  facebook:
+    '<path d="M14.1 21.9v-8.2h2.8l.42-3.2h-3.22V8.4c0-.93.26-1.56 1.6-1.56h1.72V4a23 23 0 0 0-2.5-.13c-2.48 0-4.18 1.51-4.18 4.3v2.38H7.9v3.2h2.84v8.15h3.36Z"/>',
+  tiktok:
+    '<path d="M16.6 2h-3.1v13.2a2.5 2.5 0 1 1-2.1-2.47V9.6a5.7 5.7 0 1 0 5.2 5.67V8.8a6.6 6.6 0 0 0 3.9 1.27V6.96a3.55 3.55 0 0 1-2.5-1.14A3.9 3.9 0 0 1 16.6 2Z"/>',
+  youtube:
+    '<path d="M21.6 7.2a2.5 2.5 0 0 0-1.76-1.77C18.27 5 12 5 12 5s-6.27 0-7.84.43A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.76 1.77C5.73 19 12 19 12 19s6.27 0 7.84-.43a2.5 2.5 0 0 0 1.76-1.77A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8ZM10.1 15V9l5.2 3-5.2 3Z"/>',
+  whatsapp:
+    '<path d="M12.04 2A9.9 9.9 0 0 0 2.1 11.9c0 1.75.46 3.46 1.34 4.97L2 22l5.27-1.38a9.86 9.86 0 0 0 4.77 1.22h.01a9.9 9.9 0 0 0 9.94-9.9A9.9 9.9 0 0 0 12.04 2Zm0 18.13h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.12.82.83-3.05-.2-.31a8.2 8.2 0 0 1-1.26-4.36 8.24 8.24 0 1 1 8.24 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.8-.23-.09-.39-.13-.56.12-.16.25-.64.8-.78.97-.15.16-.29.18-.53.06-.25-.12-1.05-.39-2-1.23a7.4 7.4 0 0 1-1.37-1.7c-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.44.13-.14.17-.25.25-.41.09-.17.05-.31-.02-.43-.06-.12-.55-1.34-.76-1.83-.2-.48-.4-.42-.55-.43h-.48c-.16 0-.43.06-.65.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.54c.13.17 1.74 2.65 4.21 3.71.59.26 1.05.41 1.4.52.6.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.2-.58.2-1.08.15-1.18-.06-.11-.23-.17-.48-.29Z"/>',
+};
+
+/* Uniquement les réseaux réellement renseignés dans src/data/site.ts. */
+const reseaux = (
+  [
+    {
+      cle: 'instagram',
+      label: 'Instagram',
+      url: site.social.instagram,
+      texte: 'Exercices filmés, coulisses des séances et corrections techniques au quotidien.',
+    },
+    {
+      cle: 'facebook',
+      label: 'Facebook',
+      url: site.social.facebook,
+      texte: 'Annonces de créneaux, séances collectives et retours des personnes accompagnées.',
+    },
+    {
+      cle: 'tiktok',
+      label: 'TikTok',
+      url: site.social.tiktok,
+      texte: 'Formats courts : un mouvement, une erreur fréquente, la correction en trente secondes.',
+    },
+    {
+      cle: 'youtube',
+      label: 'YouTube',
+      url: site.social.youtube,
+      texte: 'Séances guidées et explications longues : échauffement, mobilité, renforcement.',
+    },
+    {
+      cle: 'whatsapp',
+      label: 'WhatsApp',
+      url: site.social.whatsapp,
+      texte: 'Le canal le plus rapide pour une question courte ou une photo de ton installation.',
+    },
+  ] as const
+).filter((reseau) => reseau.url.trim() !== '');
+
+const descriptionSeo = `Une question sur le coaching${nb}? Écris, appelle ou réserve ton créneau${nb}: ${site.brand.name} répond sous 24${nb}h ouvrées. En présentiel, en visio ou à distance.`;
+---
+
+<Base title="Contact" description={descriptionSeo} canonical="/contact">
+  {/* ------------------------------------------------------------------ HERO */}
+  <section class="section section--tight contact-hero" aria-labelledby="hero-titre">
+    <div class="container">
+      <div class="grid grid--sidebar grid--gap-l items-start">
+        <div class="stack stack--m">
+          <p class="eyebrow animate-fade-up">Contact</p>
+
+          <h1 id="hero-titre" class="animate-fade-up delay-1">
+            Une question&nbsp;?<br /><span class="mark">Parlons-en</span>
+          </h1>
+
+          <p class="lead animate-fade-up delay-2">
+            Pas de formulaire anonyme, pas de robot qui trie les messages&nbsp;: tu écris, tu
+            appelles, et c’est moi qui te réponds. Dis-moi simplement où tu en es et ce que tu
+            veux atteindre&nbsp;— on verra ensemble si l’accompagnement a du sens pour toi.
+          </p>
+
+          <div class="cluster animate-fade-up delay-3">
+            <a class="btn btn--primary btn--lg" href={emailQuestionHref}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <rect x="2.75" y="5" width="18.5" height="14" rx="2.5"></rect>
+                <path d="m3.5 7.5 8.5 6 8.5-6"></path>
+              </svg>
+              Écrire un e-mail
+            </a>
+            <a class="btn btn--ghost btn--lg" href={telHref}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z"
+                ></path>
+              </svg>
+              Appeler
+            </a>
+          </div>
+
+          <ul class="cluster cluster--xs contact-hero__modes animate-fade-up delay-4" role="list">
+            {modes.map((mode) => <li class="chip chip--dot">{mode}</li>)}
+          </ul>
+        </div>
+
+        {/* Repères de disponibilité. */}
+        <aside class="card card--accent card--pad-l contact-card animate-fade" aria-labelledby="dispo-titre">
+          <p class="eyebrow eyebrow--plain">En pratique</p>
+          <h2 id="dispo-titre" class="card__title">Quand je réponds</h2>
+          <ul class="list-check">
+            <li>E-mail et messages&nbsp;: réponse sous 24&nbsp;h ouvrées</li>
+            <li>Téléphone&nbsp;: du lundi au vendredi, 8&nbsp;h–20&nbsp;h</li>
+            <li>Samedi matin pour les questions rapides</li>
+            <li>Créneau réservé en ligne&nbsp;: confirmation immédiate</li>
+          </ul>
+          <p class="card__meta">
+            Je suis souvent en séance&nbsp;: si le téléphone sonne dans le vide, laisse un message,
+            je rappelle dans la journée.
+          </p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  {/* -------------------------------------------------------- MOYENS DE CONTACT */}
+  <Section
+    id="moyens"
+    class="section--rule"
+    eyebrow="Moyens de contact"
+    title="Choisis ton canal"
+    subtitle={`${whatsapp ? 'Quatre' : 'Trois'} chemins directs, tous cliquables${nb}: le plus rapide reste celui que tu utilises déjà.`}
+  >
+    <div class="grid grid--2 contact-grid">
+      {/* E-mail — canal principal, e-mail pré-rempli. */}
+      <a class="card card--pad-l card--featured contact-tile reveal" href={emailQuestionHref}>
+        <span class="icon-badge" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <rect x="2.75" y="5" width="18.5" height="14" rx="2.5"></rect>
+            <path d="m3.5 7.5 8.5 6 8.5-6"></path>
+          </svg>
+        </span>
+        <h3 class="card__title contact-tile__title">E-mail</h3>
+        <p class="contact-tile__value">{site.contact.email}</p>
+        <p class="card__text">
+          Le canal le plus complet pour détailler ton objectif, tes contraintes et tes
+          disponibilités. Le message s’ouvre déjà pré-rempli.
+        </p>
+        <p class="card__foot contact-tile__action" aria-hidden="true">
+          Ouvrir ma messagerie
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <path d="M4.5 12h14m-5.5-5.5L18.5 12 13 17.5"></path>
+          </svg>
+        </p>
+      </a>
+
+      {/* Téléphone. */}
+      <a class="card card--pad-l contact-tile reveal" href={telHref} style="--reveal-delay: 90ms">
+        <span class="icon-badge icon-badge--2" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <path
+              d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z"
+            ></path>
+          </svg>
+        </span>
+        <h3 class="card__title contact-tile__title">Téléphone</h3>
+        <p class="contact-tile__value">{site.contact.phone}</p>
+        <p class="card__text">
+          Pour les questions qui se règlent en deux minutes&nbsp;: un doute sur le format, un
+          horaire, une contre-indication à vérifier avant de commencer.
+        </p>
+        <p class="card__foot contact-tile__action" aria-hidden="true">
+          Appeler maintenant
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <path d="M4.5 12h14m-5.5-5.5L18.5 12 13 17.5"></path>
+          </svg>
+        </p>
+      </a>
+
+      {/* WhatsApp — affiché uniquement si le lien est renseigné. */}
+      {
+        whatsapp && (
+          <a
+            class="card card--pad-l contact-tile reveal"
+            href={whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            style="--reveal-delay: 180ms"
+          >
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false" set:html={iconesReseaux.whatsapp} />
+            </span>
+            <h3 class="card__title contact-tile__title">
+              WhatsApp <span class="sr-only">(nouvelle fenêtre)</span>
+            </h3>
+            <p class="contact-tile__value">Message direct</p>
+            <p class="card__text">
+              Idéal pour envoyer une photo de ton matériel, une vidéo d’un mouvement ou un message
+              vocal entre deux séances.
+            </p>
+            <p class="card__foot contact-tile__action" aria-hidden="true">
+              Ouvrir la discussion
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                focusable="false"
+              >
+                <path d="M4.5 12h14m-5.5-5.5L18.5 12 13 17.5" />
+              </svg>
+            </p>
+          </a>
+        )
+      }
+
+      {/* Renvoi vers la réservation. */}
+      <a class="card card--pad-l contact-tile reveal" href="/reservation" style="--reveal-delay: 270ms">
+        <span class="icon-badge icon-badge--2" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <rect x="3.5" y="5" width="17" height="16" rx="2.5"></rect>
+            <path d="M8 3v4M16 3v4M3.5 10h17M9.5 15.5l1.9 1.9 3.6-3.9"></path>
+          </svg>
+        </span>
+        <h3 class="card__title contact-tile__title">Un créneau, tout de suite</h3>
+        <p class="contact-tile__value">{site.booking.ctaLabel}</p>
+        <p class="card__text">
+          Tu sais déjà ce que tu veux&nbsp;? Passe l’étape des questions et cale directement la
+          séance découverte, sans engagement, sur le créneau qui t’arrange.
+        </p>
+        <p class="card__foot contact-tile__action" aria-hidden="true">
+          Voir la réservation
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <path d="M4.5 12h14m-5.5-5.5L18.5 12 13 17.5"></path>
+          </svg>
+        </p>
+      </a>
+    </div>
+  </Section>
+
+  {/* ------------------------------------------------- DÉLAI & MESSAGE UTILE */}
+  <Section
+    id="delais"
+    variant="alt"
+    eyebrow="Délai de réponse"
+    title="Ce qui se passe après ton message"
+    subtitle={`Aucune file d’attente automatique${nb}: chaque message est lu et traité à la main, dans l’ordre d’arrivée.`}
+  >
+    <div class="grid grid--sidebar grid--gap-l items-start">
+      <div class="stack stack--m">
+        <ul class="grid grid--3 grid--gap-s contact-stats reveal" role="list">
+          <li class="card card--flat stat">
+            <span class="stat__value">24&nbsp;h</span>
+            <span class="stat__label">Réponse ouvrée</span>
+          </li>
+          <li class="card card--flat stat">
+            <span class="stat__value">7&nbsp;j/7</span>
+            <span class="stat__label">Messages relevés</span>
+          </li>
+          <li class="card card--flat stat">
+            <span class="stat__value">30&nbsp;min</span>
+            <span class="stat__label">Séance découverte</span>
+          </li>
+        </ul>
+
+        <div class="card card--pad-l reveal" style="--reveal-delay: 90ms">
+          <h3 class="card__title">Un message utile en quatre lignes</h3>
+          <p class="card__text">
+            Plus ton message est précis, plus ma réponse l’est aussi. Inutile d’écrire un roman&nbsp;:
+            ces quatre points suffisent à préparer un vrai échange.
+          </p>
+          <ul class="list-check">
+            <li>Ton objectif, formulé simplement&nbsp;— même imparfaitement</li>
+            <li>Ton niveau d’activité actuel et tes éventuelles blessures</li>
+            <li>Le format envisagé&nbsp;: présentiel, visio ou programme à distance</li>
+            <li>Tes créneaux réalistes dans une semaine type</li>
+          </ul>
+          <p class="card__meta">
+            Tu reçois une réponse écrite, avec une proposition de rendez-vous si l’échange s’y
+            prête. Aucune relance commerciale, aucune inscription à une liste de diffusion.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout reveal" style="--reveal-delay: 180ms">
+        <div class="stack stack--s">
+          <p class="eyebrow eyebrow--plain">Parti pris</p>
+          <h3 class="h4">Pourquoi il n’y a pas de formulaire</h3>
+          <p class="text-soft">
+            Un champ «&nbsp;message&nbsp;» anonyme disparaît dans une boîte technique, atterrit
+            souvent en indésirable et ne laisse aucune trace de ton côté. En écrivant depuis ta
+            messagerie ou ton téléphone, tu gardes l’historique de l’échange, tu peux joindre un
+            compte rendu ou un certificat médical dès le premier message, et tu sais exactement à
+            qui tu t’adresses.
+          </p>
+          <p class="text-muted contact-note">
+            Tes coordonnées servent uniquement à te répondre. Elles ne sont ni revendues, ni
+            ajoutées à une newsletter.
+          </p>
+        </div>
+      </div>
+    </div>
+  </Section>
+
+  {/* ----------------------------------------------------- ZONE D'INTERVENTION */}
+  <Section
+    id="zone"
+    eyebrow="Zone d’intervention"
+    title={zoneTitre}
+    subtitle="Trois façons de travailler ensemble, selon ta géographie et ton emploi du temps."
+  >
+    <div class="grid grid--sidebar-left grid--gap-l items-center">
+      <div
+        class="visual visual--grid visual--ratio reveal"
+        role="img"
+        aria-label="Illustration abstraite d’une zone d’intervention : halos lumineux et trame de repères"
+      >
+        <div class="zone-pin" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"></path>
+            <circle cx="12" cy="10" r="2.6"></circle>
+          </svg>
+        </div>
+      </div>
+
+      <div class="stack stack--m reveal" style="--reveal-delay: 90ms">
+        <p class="text-soft measure">{zonePhrase}</p>
+
+        <ul class="stack stack--xs zone-list" role="list">
+          <li class="card card--flat zone-list__item">
+            <h3 class="h4 zone-list__title">En présentiel</h3>
+            <p class="card__text">
+              À domicile, en extérieur ou en salle&nbsp;: le lieu est choisi avec toi lors du bilan,
+              en fonction du matériel dont ton programme a besoin.
+            </p>
+          </li>
+          <li class="card card--flat zone-list__item">
+            <h3 class="h4 zone-list__title">En visio</h3>
+            <p class="card__text">
+              Une connexion correcte et deux mètres d’espace dégagé suffisent. Le format idéal pour
+              les semaines chargées, les déplacements ou les séances tôt le matin.
+            </p>
+          </li>
+          <li class="card card--flat zone-list__item">
+            <h3 class="h4 zone-list__title">Programme à distance</h3>
+            <p class="card__text">
+              Où que tu sois en {site.contact.country} ou ailleurs&nbsp;: un programme écrit, des
+              vidéos de référence et un point de suivi régulier sur tes retours.
+            </p>
+          </li>
+        </ul>
+
+        <ul class="cluster cluster--xs zone-modes" role="list">
+          {modes.map((mode) => <li class="chip chip--accent">{mode}</li>)}
+        </ul>
+      </div>
+    </div>
+  </Section>
+
+  {/* ---------------------------------------------------------------- RÉSEAUX */}
+  <Section
+    id="reseaux"
+    variant="alt"
+    eyebrow="Ailleurs sur le web"
+    title="Suivre le quotidien"
+    subtitle={
+      reseaux.length > 0
+        ? `Le fond de l’entraînement se joue hors des séances${nb}: technique, mobilité et régularité, publiés au fil des semaines.`
+        : `Les comptes officiels arrivent${nb}: en attendant, l’e-mail et le téléphone restent les voies les plus directes.`
+    }
+  >
+    {
+      reseaux.length > 0 ? (
+        <ul class="grid grid--auto grid--gap-s social-grid" style="--grid-min: 16rem" role="list">
+          {reseaux.map((reseau, i) => (
+            <li>
+              <a
+                class="card card--hover social-tile reveal"
+                href={reseau.url}
+                target="_blank"
+                rel="noopener noreferrer me"
+                style={`--reveal-delay: ${i * 70}ms`}
+              >
+                <span class="icon-badge icon-badge--round" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false" set:html={iconesReseaux[reseau.cle]} />
+                </span>
+                <h3 class="card__title social-tile__title">
+                  {reseau.label} <span class="sr-only">(nouvelle fenêtre)</span>
+                </h3>
+                <p class="card__text">{reseau.texte}</p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        /*
+          ENCART DE REPLI — aucun réseau renseigné dans src/data/site.ts.
+          Renseigne social.instagram, social.facebook, etc. : la grille de cartes
+          remplacera automatiquement cet encart, sans autre modification de code.
+        */
+        <div class="card card--accent card--pad-l stack stack--m social-fallback">
+          <span class="icon-badge icon-badge--round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              focusable="false"
+            >
+              <circle cx="12" cy="12" r="8.5" />
+              <path d="M3.5 12h17M12 3.5c2.2 2.4 3.3 5.3 3.3 8.5S14.2 18.1 12 20.5c-2.2-2.4-3.3-5.3-3.3-8.5S9.8 5.9 12 3.5Z" />
+            </svg>
+          </span>
+
+          <div class="stack stack--xs">
+            <h3 class="card__title">Les comptes ouvrent bientôt</h3>
+            <p class="card__text">
+              Les publications sont en préparation&nbsp;: démonstrations de mouvements, séances
+              types et réponses aux questions qui reviennent le plus. En attendant, rien ne
+              remplace un message direct&nbsp;— c’est d’ailleurs plus rapide qu’un commentaire.
+            </p>
+          </div>
+
+          <div class="cluster">
+            <a class="btn btn--primary" href={emailQuestionHref}>Écrire un e-mail</a>
+            <a class="btn btn--ghost" href={telHref}>Appeler</a>
+          </div>
+        </div>
+      )
+    }
+  </Section>
+
+  {/* ------------------------------------------------------------- CTA FINAL */}
+  <section class="section section--tight" aria-labelledby="cta-titre">
+    <div class="container">
+      <div class="callout reveal">
+        <div class="stack stack--m measure">
+          <p class="eyebrow">Passer à l’action</p>
+          <h2 id="cta-titre">Une question se règle vite, un objectif se travaille</h2>
+          <p class="lead">
+            Si ton message tient en une ligne, écris-moi. S’il tient en une vraie discussion,
+            réserve plutôt la séance découverte&nbsp;: trente minutes suffisent pour savoir par où
+            commencer.
+          </p>
+          <div class="cluster">
+            <a class="btn btn--primary btn--lg" href="/reservation">{site.booking.ctaLabel}</a>
+            <a class="btn btn--ghost btn--lg" href="/services">Voir les accompagnements</a>
+          </div>
+          <p class="text-muted contact-note">{site.booking.ctaNote}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ------------------------------------------------------------------ HERO */
+  .contact-hero {
+    padding-block-start: var(--space-xl);
+  }
+
+  .contact-hero__modes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .contact-card {
+    gap: var(--space-s);
+    box-shadow: var(--shadow-l);
+  }
+
+  @media (min-width: 62em) {
+    .contact-hero {
+      padding-block-start: var(--space-2xl);
+    }
+
+    .contact-card {
+      position: sticky;
+      top: calc(var(--header-h) + var(--space-s));
+    }
+  }
+
+  /* -------------------------------------------------- CARTES DE CONTACT */
+  .contact-grid {
+    align-items: stretch;
+  }
+
+  .contact-tile {
+    gap: var(--space-2xs);
+    text-decoration: none;
+    color: inherit;
+    min-height: 100%;
+  }
+
+  .contact-tile .icon-badge {
+    margin-bottom: var(--space-2xs);
+  }
+
+  .contact-tile__title {
+    font-size: var(--step-1);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+  }
+
+  .contact-tile__value {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+    color: var(--c-text);
+    overflow-wrap: anywhere;
+    transition: color var(--transition);
+  }
+
+  .contact-tile:hover .contact-tile__value,
+  .contact-tile:focus-visible .contact-tile__value {
+    color: var(--c-accent);
+  }
+
+  .contact-tile__action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    font-family: var(--font-display);
+    font-size: max(0.875rem, var(--step--1));
+    font-weight: 500;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--c-accent);
+  }
+
+  .contact-tile__action svg {
+    width: 1.1em;
+    height: 1.1em;
+    flex: none;
+    transition: transform var(--transition);
+  }
+
+  .contact-tile:hover .contact-tile__action svg {
+    transform: translateX(4px);
+  }
+
+  /* --------------------------------------------------- DÉLAIS & MESSAGE */
+  .contact-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .contact-stats .stat {
+    gap: var(--space-3xs);
+    padding: var(--space-s) var(--space-m);
+  }
+
+  .contact-note {
+    font-size: max(0.875rem, var(--step--1));
+    max-width: var(--measure-tight);
+  }
+
+  /* ----------------------------------------------------------------- ZONE */
+  .zone-pin {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--c-accent);
+    z-index: 1;
+  }
+
+  .zone-pin svg {
+    width: 4.5rem;
+    height: 4.5rem;
+    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.55));
+  }
+
+  .zone-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .zone-list__item {
+    gap: var(--space-3xs);
+    border-left: 2px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+  }
+
+  .zone-list__title {
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .zone-modes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* -------------------------------------------------------------- RÉSEAUX */
+  .social-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .social-tile {
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .social-tile__title {
+    font-size: var(--step-1);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+  }
+
+  .social-tile:hover .social-tile__title {
+    color: var(--c-accent);
+  }
+
+  .social-fallback {
+    box-shadow: var(--shadow-l);
+    max-width: var(--container-narrow);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .contact-tile__action svg,
+    .contact-tile__value {
+      transition: none;
+    }
+
+    .contact-tile:hover .contact-tile__action svg {
+      transform: none;
+    }
+  }
+</style>

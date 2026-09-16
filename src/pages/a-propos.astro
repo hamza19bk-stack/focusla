@@ -1,0 +1,652 @@
+---
+/**
+ * Page « À propos » — le coach derrière Focusla.
+ *
+ * Objectif : créer la confiance (parcours, philosophie, formations, valeurs)
+ * sans jamais afficher de tarif ni de coordonnée écrite en dur.
+ *
+ * À PERSONNALISER PAR LE PROPRIÉTAIRE :
+ *   1. `brand.coachName` dans src/data/site.ts (le prénom s'affiche alors
+ *      automatiquement dans le hero et en signature de la citation) ;
+ *   2. les intitulés de la section « Formations » (voir le commentaire dédié) ;
+ *   3. les jalons du parcours (voir le commentaire dans la section « Parcours »).
+ */
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import { site } from '../data/site';
+
+/* Un jeton « TODO_… » ne doit jamais apparaître à l'écran : on prévoit un repli. */
+const affichable = (valeur: string) =>
+  valeur.trim() !== '' && !valeur.trim().startsWith('TODO');
+
+const coach = affichable(site.brand.coachName) ? site.brand.coachName : '';
+const ville = affichable(site.contact.city) ? site.contact.city : '';
+
+/* Nom affiché sur la plaque du portrait et en signature de la citation. */
+const nomAffiche = coach || `Le coach ${site.brand.name}`;
+const signature = coach || site.brand.name;
+
+/* Navigation : libellés et chemins repris de site.nav, jamais écrits en dur. */
+const versReservation = site.nav.find((item) => item.href === '/reservation');
+const versContact = site.nav.find((item) => item.href === '/contact');
+const versServices = site.nav.find((item) => item.href === '/services');
+
+/* Modes d'accompagnement : la liste vient de site.ts, les descriptions sont
+   associées par libellé, avec un texte de repli si un libellé change. */
+const textesModes: Record<string, string> = {
+  'En présentiel': ville
+    ? `Des séances encadrées à ${ville}, en salle ou en extérieur : je corrige les postures en direct et j’ajuste les charges au fil de la séance.`
+    : 'Des séances encadrées, en salle ou en extérieur : je corrige les postures en direct et j’ajuste les charges au fil de la séance.',
+  'En visio':
+    'Le même accompagnement depuis chez toi : caméra allumée, corrections en temps réel et très peu de matériel — ton poids de corps suffit pour démarrer.',
+  'Programmes à distance':
+    'Un programme écrit pour toi, revu régulièrement, avec des vidéos de démonstration et un point d’étape pour ajuster le cap.',
+};
+const repliMode =
+  'Un format pensé pour s’adapter à ton emploi du temps, avec le même suivi et la même exigence.';
+
+const modes = [...site.contact.modes].map((libelle, index) => ({
+  libelle,
+  texte: textesModes[libelle] ?? repliMode,
+  index,
+}));
+
+/* Icônes des modes (tracés SVG), choisies par position avec bouclage. */
+const iconesModes = [
+  'M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11ZM12 9.4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2Z',
+  'M3 7.5A1.5 1.5 0 0 1 4.5 6h9A1.5 1.5 0 0 1 15 7.5v9A1.5 1.5 0 0 1 13.5 18h-9A1.5 1.5 0 0 1 3 16.5v-9ZM15 10.5 21 7v10l-6-3.5',
+  'M8.5 3h7A1.5 1.5 0 0 1 17 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 19.5v-15A1.5 1.5 0 0 1 8.5 3ZM11 17.6h2',
+];
+
+const description =
+  'Coach sportif à l’écoute : découvre mon parcours, ma façon de coacher, mes formations et les valeurs qui guident chaque séance, en présentiel comme à distance.';
+---
+
+<Base title="À propos" description={description} canonical="/a-propos">
+  <!-- HERO -->
+  <section class="section section--tight">
+    <div class="container">
+      <div class="grid grid--sidebar grid--gap-l items-center">
+        <div class="stack stack--m animate-fade-up">
+          <p class="eyebrow">Faire connaissance</p>
+          <h1>Derrière Focusla,<br /><span class="mark">un coach, pas un programme</span></h1>
+          <p class="lead">
+            Pas de méthode miracle, pas de discours recopié&nbsp;: je prends d’abord le temps
+            de comprendre ton quotidien, tes contraintes et ton histoire avec le sport.
+            Ensuite seulement, on construit quelque chose qui tient dans la durée.
+          </p>
+
+          <ul class="cluster cluster--xs" role="list">
+            {modes.map((mode) => <li class="chip chip--dot">{mode.libelle}</li>)}
+          </ul>
+
+          <div class="cluster">
+            <a class="btn btn--primary btn--lg" href={versReservation?.href ?? '/reservation'}>
+              {site.booking.ctaLabel}
+            </a>
+            {
+              versServices && (
+                <a class="btn btn--ghost btn--lg" href={versServices.href}>
+                  Voir l’accompagnement
+                </a>
+              )
+            }
+          </div>
+          <p class="card__meta">{site.booking.ctaNote}</p>
+        </div>
+
+        <figure class="portrait animate-fade-up delay-2">
+          <div class="visual visual--grid visual--square portrait__visual">
+            <svg class="portrait__art" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+              <circle cx="100" cy="58" r="22" fill="none" stroke="currentColor" stroke-width="3" opacity="0.9"></circle>
+              <path
+                d="M62 152c0-24 17-42 38-42s38 18 38 42"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                opacity="0.9"></path>
+              <path d="M34 118h16M150 118h16" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" opacity="0.55"></path>
+              <path d="M42 108v20M158 108v20" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" opacity="0.32"></path>
+              <path d="M50 118h100" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.28"></path>
+            </svg>
+          </div>
+          <figcaption class="portrait__plate">
+            <span class="portrait__name">{nomAffiche}</span>
+            <span class="portrait__role">{site.brand.tagline}</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- PARCOURS -->
+  <Section
+    id="parcours"
+    eyebrow="Le parcours"
+    title="Comment j’en suis venu au coaching"
+    subtitle="Quatre étapes qui expliquent ma façon de travailler aujourd’hui — et pourquoi je me méfie autant des programmes copiés-collés."
+    width="narrow"
+  >
+    <!--
+      À PERSONNALISER : remplace le texte de chaque étape par ta propre histoire
+      (déclic, formation, premières années d'encadrement, création de la marque).
+      Aucune date ni aucun chiffre n'est avancé ici : ajoute les tiens si tu le souhaites.
+    -->
+    <ol class="timeline" role="list">
+      <li class="reveal">
+        <span class="step-number" aria-hidden="true">1</span>
+        <div class="stack stack--2xs">
+          <h3 class="h4">Le déclic</h3>
+          <p class="text-soft">
+            J’ai commencé comme beaucoup&nbsp;: une salle de quartier, un programme trouvé
+            en ligne et la conviction qu’il fallait souffrir pour progresser. Beaucoup de
+            séances, peu de résultats, et un dos qui rappelait régulièrement que la
+            technique n’était pas au rendez-vous.
+          </p>
+        </div>
+      </li>
+      <li class="reveal" style="--reveal-delay: 90ms">
+        <span class="step-number" aria-hidden="true">2</span>
+        <div class="stack stack--2xs">
+          <h3 class="h4">Comprendre au lieu de copier</h3>
+          <p class="text-soft">
+            Tout a changé le jour où j’ai voulu savoir pourquoi&nbsp;: comment un muscle se
+            renforce, pourquoi la récupération compte autant que l’effort, ce qu’une
+            progression de charge signifie vraiment. Je me suis formé, j’ai lu, et j’ai
+            testé sur moi avant de proposer quoi que ce soit à quelqu’un d’autre.
+          </p>
+        </div>
+      </li>
+      <li class="reveal" style="--reveal-delay: 180ms">
+        <span class="step-number" aria-hidden="true">3</span>
+        <div class="stack stack--2xs">
+          <h3 class="h4">Le terrain</h3>
+          <p class="text-soft">
+            Encadrer, c’est surtout apprendre à écouter. Des grands débutants intimidés par
+            la salle aux sportifs qui veulent passer un cap, chaque personne m’a appris la
+            même chose&nbsp;: un exercice identique ne donne jamais le même résultat sur deux
+            corps, deux emplois du temps et deux niveaux d’énergie.
+          </p>
+        </div>
+      </li>
+      <li class="reveal" style="--reveal-delay: 270ms">
+        <span class="step-number" aria-hidden="true">4</span>
+        <div class="stack stack--2xs">
+          <h3 class="h4">La naissance de {site.brand.name}</h3>
+          <p class="text-soft">
+            {site.brand.name} est né de cette conviction simple&nbsp;: un accompagnement utile
+            est un accompagnement sur mesure, expliqué et suivi dans le temps. Pas un fichier
+            envoyé une fois, puis oublié.
+          </p>
+        </div>
+      </li>
+    </ol>
+  </Section>
+
+  <!-- PHILOSOPHIE -->
+  <Section
+    id="philosophie"
+    eyebrow="Ma philosophie"
+    title="Exigeant sur la méthode, patient avec les gens"
+    subtitle="Trois principes guident chaque séance, du premier bilan au dernier cycle d’entraînement."
+    variant="alt"
+  >
+    <div class="grid grid--3">
+      <article class="card card--hover reveal">
+        <span class="icon-badge" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M4 18 9 12l3.5 3.5L20 7"></path>
+            <path d="M15 7h5v5"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Progressif avant d’être intense</h3>
+        <p class="card__text">
+          Une bonne séance n’est pas celle qui met à terre, c’est celle qu’on peut répéter
+          la semaine suivante. On installe d’abord la technique et la régularité&nbsp;;
+          l’intensité arrive quand ton corps est prêt à l’encaisser.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 90ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M12 3.2a8.8 8.8 0 1 0 8.8 8.8"></path>
+            <path d="M12 7.8a4.2 4.2 0 1 0 4.2 4.2"></path>
+            <path d="M12 12 20 4"></path>
+            <path d="M16.2 4H20v3.8"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Expliqué, jamais imposé</h3>
+        <p class="card__text">
+          Tu sauras toujours pourquoi tu fais un exercice, ce qu’il travaille et ce qu’on en
+          attend. Mon objectif n’est pas que tu dépendes de moi&nbsp;: c’est que tu deviennes
+          autonome et capable de t’entraîner sans te blesser.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 180ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M12 20.5s-7-4.2-7-9.4A4.3 4.3 0 0 1 12 8a4.3 4.3 0 0 1 7 3.1c0 5.2-7 9.4-7 9.4Z"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Durable plutôt que spectaculaire</h3>
+        <p class="card__text">
+          Les transformations express se défont aussi vite qu’elles arrivent. Je préfère des
+          habitudes qui résistent aux semaines chargées, aux vacances et aux coups de fatigue.
+          C’est moins impressionnant en photo, beaucoup plus solide dans la vraie vie.
+        </p>
+      </article>
+    </div>
+
+    <div class="grid grid--2 grid--gap-l engagements">
+      <article class="card card--pad-l card--accent reveal">
+        <h3 class="card__title">Ce sur quoi je m’engage</h3>
+        <ul class="list-check">
+          <li>Un bilan honnête au départ, sans jugement sur ton niveau ni sur ton passé sportif.</li>
+          <li>Un programme calé sur ton emploi du temps réel, pas sur un emploi du temps idéal.</li>
+          <li>Des explications à chaque exercice et des réponses à tes questions entre les séances.</li>
+          <li>Un suivi de ta progression et des ajustements réguliers, jamais un programme figé.</li>
+        </ul>
+      </article>
+
+      <article class="card card--pad-l reveal" style="--reveal-delay: 90ms">
+        <h3 class="card__title">Ce que tu ne trouveras pas ici</h3>
+        <ul class="list-no">
+          <li>Des promesses de résultats en un temps record.</li>
+          <li>Des régimes restrictifs ou des compléments présentés comme «&nbsp;indispensables&nbsp;».</li>
+          <li>De la culpabilisation&nbsp;: une semaine ratée n’efface pas les précédentes.</li>
+          <li>Un programme générique envoyé une fois, puis laissé à l’abandon.</li>
+        </ul>
+      </article>
+    </div>
+
+    <figure class="quote reveal">
+      <blockquote>
+        <p>
+          «&nbsp;Le meilleur entraînement n’est pas le plus dur&nbsp;: c’est celui que tu feras
+          encore dans six mois.&nbsp;»
+        </p>
+      </blockquote>
+      <figcaption class="quote__by">{signature}</figcaption>
+    </figure>
+  </Section>
+
+  <!-- FORMATIONS ET CERTIFICATIONS -->
+  <Section
+    id="formations"
+    eyebrow="Formations"
+    title="Une pratique encadrée, pas improvisée"
+    subtitle="Se former ne s’arrête jamais : la recherche avance, les méthodes évoluent, et les personnes que j’accompagne aussi."
+  >
+    <!--
+      À PERSONNALISER — IMPORTANT AVANT LA MISE EN LIGNE.
+      Les intitulés ci-dessous sont VOLONTAIREMENT GÉNÉRIQUES : aucun diplôme,
+      aucun organisme et aucune année n'ont été inventés. Remplace chaque titre
+      et chaque description par tes formations réelles (intitulé exact, organisme,
+      année d'obtention) et supprime les cartes qui ne te correspondent pas.
+    -->
+    <div class="grid grid--auto grid--gap-s" style="--grid-min: 16rem">
+      <article class="card card--flat reveal">
+        <span class="icon-badge icon-badge--round" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M12 3.2 3 7.6l9 4.4 9-4.4-9-4.4Z"></path>
+            <path d="M7 10v5.1c0 1.7 2.2 3 5 3s5-1.3 5-3V10"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Formation en coaching sportif</h3>
+        <p class="card__text">
+          La base du métier&nbsp;: anatomie fonctionnelle, construction d’un programme,
+          sécurité et encadrement du pratiquant.
+        </p>
+      </article>
+
+      <article class="card card--flat reveal" style="--reveal-delay: 80ms">
+        <span class="icon-badge icon-badge--round" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M3.5 13.5h3L9 6.5l3 11 2.5-7 1.5 3h4.5"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Préparation physique</h3>
+        <p class="card__text">
+          Planification des cycles, gestion de la charge et du repos, développement de la
+          force et de l’endurance selon l’objectif visé.
+        </p>
+      </article>
+
+      <article class="card card--flat reveal" style="--reveal-delay: 160ms">
+        <span class="icon-badge icon-badge--round" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M12 20.8c4.3 0 7.8-3.5 7.8-7.8 0-5-4-8.6-7.8-10-3.8 1.4-7.8 5-7.8 10 0 4.3 3.5 7.8 7.8 7.8Z"></path>
+            <path d="M12 20.8c0-3.9 1.5-6.9 4.2-9"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Nutrition du sportif</h3>
+        <p class="card__text">
+          Des repères simples et applicables pour soutenir l’entraînement, dans le strict
+          respect du cadre légal&nbsp;: aucune prescription, aucun suivi médical.
+        </p>
+      </article>
+
+      <article class="card card--flat reveal" style="--reveal-delay: 240ms">
+        <span class="icon-badge icon-badge--round" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M12 3.4 5 6v6c0 4.2 3 7.4 7 8.6 4-1.2 7-4.4 7-8.6V6l-7-2.6Z"></path>
+            <path d="m9.4 12.2 1.9 1.9 3.3-3.7"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Gestes de premiers secours</h3>
+        <p class="card__text">
+          Parce qu’encadrer, c’est aussi savoir réagir&nbsp;: formation aux gestes qui sauvent,
+          maintenue à jour.
+        </p>
+      </article>
+    </div>
+
+    <p class="text-muted note">
+      Les attestations de formation sont consultables sur simple demande, avant même la
+      première séance.
+    </p>
+  </Section>
+
+  <!-- VALEURS -->
+  <Section
+    id="valeurs"
+    eyebrow="Mes valeurs"
+    title="Ce qui ne changera pas, quel que soit ton objectif"
+    subtitle="Ces quatre repères valent pour la première séance découverte comme pour la centième."
+    variant="alt"
+    align="center"
+  >
+    <div class="grid grid--4 grid--gap-s">
+      <article class="card card--hover reveal">
+        <span class="icon-badge" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M4 5.6h16v10H9.6L4 19.6v-14Z"></path>
+            <path d="M8.4 10.6h7.2"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Écoute</h3>
+        <p class="card__text">
+          La première séance sert surtout à poser des questions. Ton passé sportif, tes
+          douleurs, ton sommeil et ton rythme de vie comptent autant que ton objectif.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 80ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M12 4.2a7.8 7.8 0 1 0 7.8 7.8"></path>
+            <path d="M12 8.4a3.6 3.6 0 1 0 3.6 3.6"></path>
+            <path d="M12 12h6.2"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Exigence bienveillante</h3>
+        <p class="card__text">
+          J’attends de toi de la régularité, pas de la perfection. On ne triche pas sur la
+          technique, mais on ne dramatise jamais une séance manquée.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 160ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M2.6 12S6.1 6.6 12 6.6 21.4 12 21.4 12 17.9 17.4 12 17.4 2.6 12 2.6 12Z"></path>
+            <circle cx="12" cy="12" r="2.6"></circle>
+          </svg>
+        </span>
+        <h3 class="card__title">Transparence</h3>
+        <p class="card__text">
+          Tu sais où tu vas, pourquoi et à quel rythme. Si un objectif me paraît irréaliste
+          ou risqué, je te le dis franchement plutôt que de te vendre du rêve.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 240ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg class="ico" viewBox="0 0 24 24" focusable="false">
+            <path d="M5 5.6h14v14H5v-14Z"></path>
+            <path d="M5 9.6h14M9 3.6v4M15 3.6v4"></path>
+            <path d="m9 14.4 2 2 4-4.3"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Régularité</h3>
+        <p class="card__text">
+          Trois séances tenues chaque semaine valent mieux qu’une semaine héroïque suivie
+          d’un mois d’arrêt. Tout le reste découle de là.
+        </p>
+      </article>
+    </div>
+  </Section>
+
+  <!-- MODES D'ACCOMPAGNEMENT -->
+  <Section
+    id="accompagnement"
+    eyebrow="Travailler ensemble"
+    title="Plusieurs façons d’être accompagné"
+    subtitle="Le format change ; la méthode, l’attention et le niveau de suivi restent identiques."
+  >
+    <a slot="actions" class="btn btn--ghost" href={versServices?.href ?? '/services'}>
+      Le détail des accompagnements
+    </a>
+
+    <div class="grid grid--auto grid--gap-s" style="--grid-min: 17rem">
+      {
+        modes.map((mode) => (
+          <article class="card card--hover reveal" style={`--reveal-delay: ${mode.index * 80}ms`}>
+            <span class="icon-badge icon-badge--2" aria-hidden="true">
+              <svg class="ico" viewBox="0 0 24 24" focusable="false">
+                <path d={iconesModes[mode.index % iconesModes.length]} />
+              </svg>
+            </span>
+            <h3 class="card__title">{mode.libelle}</h3>
+            <p class="card__text">{mode.texte}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    {
+      ville && (
+        <p class="text-muted note">
+          Séances en présentiel à {ville} et aux alentours&nbsp;; partout ailleurs en visio
+          ou en programme à distance.
+        </p>
+      )
+    }
+  </Section>
+
+  <!-- APPEL À L'ACTION FINAL -->
+  <section class="section section--tight">
+    <div class="container">
+      <div class="callout reveal">
+        <div class="stack stack--m measure">
+          <p class="eyebrow">La suite</p>
+          <h2>On en parle&nbsp;?</h2>
+          <p class="lead">
+            Le plus simple reste d’échanger&nbsp;: tu racontes où tu en es, ce que tu as déjà
+            essayé et ce que tu aimerais changer. Sans engagement, et sans jugement.
+          </p>
+          <div class="cluster">
+            <a class="btn btn--primary btn--lg" href={versReservation?.href ?? '/reservation'}>
+              {site.booking.ctaLabel}
+            </a>
+            {
+              versContact && (
+                <a class="btn btn--ghost btn--lg" href={versContact.href}>
+                  Poser une question
+                </a>
+              )
+            }
+          </div>
+          <p class="card__meta">{site.booking.ctaNote}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* Icônes au trait : global.css applique fill:currentColor à tous les <svg>. */
+  .ico {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ---------------------------------------------------------- PORTRAIT */
+  .portrait {
+    position: relative;
+    margin: 0;
+  }
+  .portrait__visual {
+    display: grid;
+    place-items: center;
+  }
+  .portrait__art {
+    width: 66%;
+    max-width: 19rem;
+    height: auto;
+    color: var(--c-accent);
+    opacity: 0.85;
+  }
+  .portrait__plate {
+    position: absolute;
+    left: var(--space-s);
+    right: var(--space-s);
+    bottom: var(--space-s);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    padding: var(--space-xs) var(--space-s);
+    background: color-mix(in srgb, var(--c-bg) 88%, transparent);
+    border: var(--border-1);
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow-m);
+  }
+  .portrait__name {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
+    text-transform: uppercase;
+    color: var(--c-text);
+  }
+  .portrait__role {
+    font-size: var(--step--1);
+    color: var(--c-text-muted);
+  }
+
+  @supports (backdrop-filter: blur(10px)) {
+    .portrait__plate {
+      background: color-mix(in srgb, var(--c-bg) 66%, transparent);
+      backdrop-filter: blur(10px);
+    }
+  }
+
+  /* ---------------------------------------------------------- PARCOURS */
+  .timeline {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-l);
+  }
+  .timeline > li {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-s);
+  }
+  /* Filet vertical reliant les pastilles (purement décoratif). */
+  .timeline > li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 1.375rem; /* centre de .step-number (2.75rem / 2) */
+    top: 3.25rem;
+    bottom: calc(var(--space-l) * -1);
+    width: 2px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(180deg, var(--c-accent-dim), transparent);
+    opacity: 0.45;
+  }
+
+  /* ------------------------------------------------------- PHILOSOPHIE */
+  .engagements {
+    margin-top: var(--space-l);
+  }
+
+  /* Pendant négatif de .list-check : croix EMBER au lieu de la coche VOLT. */
+  .list-no {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-xs);
+  }
+  .list-no li {
+    position: relative;
+    padding-left: 2rem;
+    color: var(--c-text-soft);
+  }
+  .list-no li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.35em;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 50%;
+    background: var(--c-accent-2-soft);
+    border: 1px solid color-mix(in srgb, var(--c-accent-2) 45%, transparent);
+  }
+  .list-no li::after {
+    content: '';
+    position: absolute;
+    left: 0.43rem;
+    top: 0.72em;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-top: 2px solid var(--c-accent-2);
+    border-right: 2px solid var(--c-accent-2);
+    transform: rotate(45deg);
+  }
+
+  .quote {
+    margin: var(--space-xl) 0 0;
+    padding-left: var(--space-m);
+    border-left: 3px solid var(--c-accent);
+    max-width: var(--measure);
+  }
+  .quote blockquote p {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: 500;
+    line-height: var(--leading-snug);
+    color: var(--c-text);
+  }
+  .quote__by {
+    margin-top: var(--space-xs);
+    font-size: var(--step--1);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+  }
+
+  /* ------------------------------------------------------------ DIVERS */
+  .note {
+    margin-top: var(--space-l);
+    max-width: var(--measure-tight);
+    font-size: var(--step--1);
+  }
+
+  @media (min-width: 62em) {
+    .portrait__plate {
+      left: var(--space-m);
+      right: var(--space-m);
+      bottom: var(--space-m);
+    }
+  }
+</style>

@@ -1,0 +1,123 @@
+---
+/**
+ * Section.astro — enveloppe réutilisable pour toutes les sections de page.
+ *
+ * Rend :
+ *   <section class="section"> > <div class="container"> > [en-tête] + <slot />
+ *
+ * Exemple :
+ *   <Section id="methode" eyebrow="La méthode" title="Trois piliers, zéro improvisation"
+ *            subtitle="Chaque programme s'appuie sur…" variant="alt" align="center">
+ *     <div class="grid grid--3">…</div>
+ *   </Section>
+ *
+ * Props :
+ *   id        (string)  — ancre HTML posée sur <section> (facultatif).
+ *   eyebrow   (string)  — sur-titre court au-dessus du titre (facultatif).
+ *   title     (string)  — titre de section (facultatif ; sans titre, aucun en-tête n'est rendu).
+ *   subtitle  (string)  — phrase d'accroche sous le titre (facultatif).
+ *   as              — balise racine : 'section' (défaut) | 'div' | 'article' | 'aside'.
+ *   headingLevel    — niveau du titre : 2 (défaut) | 3 | 4. Le <h1> reste à la page.
+ *   variant         — 'default' | 'alt' (fond légèrement éclairci) | 'panel' (bloc plein).
+ *   align           — 'left' (défaut) | 'center'.
+ *   width           — 'default' | 'wide' | 'narrow' | 'xs' (largeur du .container).
+ *   spacing         — 'default' | 'tight' | 'none'.
+ *   reveal    (bool) — anime l'en-tête à l'apparition (défaut : true).
+ *   class     (string) — classes supplémentaires sur <section>.
+ *
+ * Le slot par défaut reçoit le contenu ; le slot nommé « actions » se place
+ * sous le sous-titre (boutons, liens).
+ */
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  as?: 'section' | 'div' | 'article' | 'aside';
+  headingLevel?: 2 | 3 | 4;
+  variant?: 'default' | 'alt' | 'panel';
+  align?: 'left' | 'center';
+  width?: 'default' | 'wide' | 'narrow' | 'xs';
+  spacing?: 'default' | 'tight' | 'none';
+  reveal?: boolean;
+  class?: string;
+}
+
+const {
+  id,
+  eyebrow,
+  title,
+  subtitle,
+  as: Balise = 'section',
+  headingLevel = 2,
+  variant = 'default',
+  align = 'left',
+  width = 'default',
+  spacing = 'default',
+  reveal = true,
+  class: classeEnPlus = '',
+} = Astro.props;
+
+const Titre = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
+
+const classesSection = [
+  'section',
+  spacing === 'tight' ? 'section--tight' : '',
+  spacing === 'none' ? 'section--flush-top section--flush-bottom' : '',
+  variant === 'alt' ? 'section--alt' : '',
+  variant === 'panel' ? 'section--panel' : '',
+  classeEnPlus,
+]
+  .filter(Boolean)
+  .join(' ');
+
+const classesContainer = [
+  'container',
+  width === 'wide' ? 'container--wide' : '',
+  width === 'narrow' ? 'container--narrow' : '',
+  width === 'xs' ? 'container--xs' : '',
+]
+  .filter(Boolean)
+  .join(' ');
+
+const classesEntete = [
+  'section__head',
+  align === 'center' ? 'section__head--center' : '',
+  reveal ? 'reveal' : '',
+]
+  .filter(Boolean)
+  .join(' ');
+
+const aUnEntete = Boolean(eyebrow || title || subtitle || Astro.slots.has('actions'));
+/* Une section identifiée et titrée est annoncée par son titre aux lecteurs d'écran. */
+const idTitre = id && title ? `${id}-titre` : undefined;
+---
+
+<Balise id={id} class={classesSection} aria-labelledby={idTitre}>
+  <div class={classesContainer}>
+    {
+      aUnEntete && (
+        <div class={classesEntete}>
+          {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+          {title && (
+            <Titre class="section__title" id={idTitre}>
+              {title}
+            </Titre>
+          )}
+          {subtitle && <p class="section__subtitle">{subtitle}</p>}
+          {Astro.slots.has('actions') && (
+            <div class={`cluster ${align === 'center' ? 'cluster--center' : ''} section__actions`}>
+              <slot name="actions" />
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    <slot />
+  </div>
+</Balise>
+
+<style>
+  .section__actions { margin-top: var(--space-m); }
+</style>

@@ -1,0 +1,513 @@
+---
+/**
+ * Accueil — src/pages/index.astro
+ *
+ * Structure : hero + points forts + aperçu des services + méthode en 4 étapes
+ * + témoignages + bandeau d'appel à l'action final.
+ * Toutes les coordonnées proviennent de src/data/site.ts (jamais en dur).
+ */
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import { site } from '../data/site';
+
+/* Une valeur « TODO_… » est un gabarit : on ne l'affiche jamais telle quelle. */
+const affichable = (v: string) => v.trim() !== '' && !v.trim().startsWith('TODO_');
+const ville = affichable(site.contact.city) ? site.contact.city : '';
+
+/* Modalités d'accompagnement (chips du hero), depuis la config. */
+const modes = [...site.contact.modes];
+
+/* Phrase de repli quand la ville n'est pas encore renseignée. */
+const lieu = ville
+  ? `Séances en présentiel à ${ville}, en visio partout ailleurs.`
+  : 'Séances en présentiel, en visio ou en programme à distance.';
+
+/* Espace insécable pour les chaînes passées en props (les entités HTML
+   ne sont pas décodées dans une valeur d'attribut de composant). */
+const nb = ' ';
+
+const descriptionSeo = `Coach sportif${nb}: bilan complet, programme sur mesure et suivi régulier, en présentiel, en visio ou à distance. Réserve ta séance découverte avec ${site.brand.name}.`;
+---
+
+<Base title="Accueil" description={descriptionSeo} canonical="/">
+  {/* ------------------------------------------------------------------ HERO */}
+  <section class="section section--tight hero" aria-labelledby="hero-titre">
+    <div class="container">
+      <div class="grid grid--sidebar grid--gap-l items-center">
+        <div class="stack stack--m">
+          <p class="eyebrow animate-fade-up">{site.brand.tagline}</p>
+
+          <h1 id="hero-titre" class="display animate-fade-up delay-1">
+            Ton plan, ton rythme,<br /><span class="mark">tes résultats</span>
+          </h1>
+
+          <p class="lead animate-fade-up delay-2">
+            Un entraînement construit autour de ta vie réelle&nbsp;: ton niveau, ton emploi du
+            temps, ton objectif. Pas de programme copié-collé, pas de promesse en l’air —
+            un cadre clair, des séances qui comptent et un suivi qui t’empêche de lâcher.
+          </p>
+
+          <div class="cluster animate-fade-up delay-3">
+            <a class="btn btn--primary btn--lg" href="/reservation">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <rect x="3.5" y="5" width="17" height="16" rx="2.5"></rect>
+                <path d="M8 3v4M16 3v4M3.5 10h17M9.5 15.5l1.9 1.9 3.6-3.9"></path>
+              </svg>
+              {site.booking.ctaLabel}
+            </a>
+            <a class="btn btn--ghost btn--lg" href="/services">Découvrir les services</a>
+          </div>
+
+          <p class="text-muted hero__note animate-fade-up delay-4">{site.booking.ctaNote}</p>
+
+          <ul class="cluster cluster--xs hero__modes animate-fade-up delay-4" role="list">
+            {modes.map((mode) => <li class="chip chip--dot">{mode}</li>)}
+          </ul>
+        </div>
+
+        {/* Bloc décoratif : remplace une photo, sans information portée. */}
+        <div class="visual visual--grid hero__visual animate-fade" aria-hidden="true">
+          <svg class="hero__chart" viewBox="0 0 320 260" preserveAspectRatio="xMidYMid meet" focusable="false">
+            <g fill="none" stroke="var(--c-border)" stroke-width="1">
+              <path d="M28 212h264M28 162h264M28 112h264M28 62h264"></path>
+            </g>
+            <g fill="var(--c-surface-3)">
+              <rect x="44" y="168" width="30" height="44" rx="8"></rect>
+              <rect x="94" y="142" width="30" height="70" rx="8"></rect>
+              <rect x="144" y="118" width="30" height="94" rx="8"></rect>
+            </g>
+            <g fill="var(--c-accent)">
+              <rect x="194" y="86" width="30" height="126" rx="8"></rect>
+              <rect x="244" y="52" width="30" height="160" rx="8"></rect>
+            </g>
+            <path
+              d="M59 150 109 128 159 104 209 70 259 36"
+              fill="none"
+              stroke="var(--c-accent-2)"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+            <circle cx="259" cy="36" r="6" fill="var(--c-accent-2)"></circle>
+            <path d="M28 212h264" fill="none" stroke="var(--c-border-strong)" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+          <p class="hero__visual-label">Semaine après semaine</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ----------------------------------------------------------- POINTS FORTS */}
+  <Section
+    id="atouts"
+    class="section--rule"
+    eyebrow="La différence"
+    title="Un cadre, pas des recettes"
+    subtitle={`Quatre principes qui guident chaque séance et chaque programme${nb}: ils expliquent pourquoi ça tient dans la durée.`}
+  >
+    <div class="grid grid--4 grid--gap-s">
+      <article class="card card--hover reveal">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <rect x="5" y="4" width="14" height="17" rx="2.5"></rect>
+            <path d="M9.5 4h5v3h-5zM8.5 12h7M8.5 16h4.5"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Un bilan avant tout&nbsp;programme</h3>
+        <p class="card__text">
+          Mobilité, force, habitudes, antécédents, contraintes de ta semaine. On part de là où tu
+          en es vraiment, pas d’un modèle standard téléchargé quelque part.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 90ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M12 3l7 3v5.4c0 4.3-2.9 8.1-7 9.4-4.1-1.3-7-5.1-7-9.4V6l7-3Z"></path>
+            <path d="M9 12.2l2.2 2.2L15.5 10"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">La technique avant la&nbsp;charge</h3>
+        <p class="card__text">
+          Chaque mouvement est expliqué, corrigé, validé avant d’ajouter du poids. C’est la voie
+          la plus rapide&nbsp;: on progresse vite parce qu’on progresse proprement.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 180ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M20.2 12a8.2 8.2 0 1 1-2.6-6"></path>
+            <path d="M20.2 3.6V9h-5.4"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Un suivi qui te tient</h3>
+        <p class="card__text">
+          Le programme est relu et ajusté au fil des semaines, et tes questions trouvent une
+          réponse entre les séances. Tu n’es jamais seul face à ta progression.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 270ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <circle cx="12" cy="13.5" r="7.5"></circle>
+            <path d="M12 9.5v4l2.6 1.8M9.5 2h5"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Des séances qui entrent dans ta&nbsp;semaine</h3>
+        <p class="card__text">
+          Durée, format et horaires se calent sur ton quotidien — pas l’inverse. Un entraînement
+          que tu peux tenir vaut mieux qu’un entraînement parfait que tu abandonnes.
+        </p>
+      </article>
+    </div>
+  </Section>
+
+  {/* -------------------------------------------------------- APERÇU SERVICES */}
+  <Section
+    id="services"
+    variant="alt"
+    eyebrow="Les accompagnements"
+    title="Trouve le format qui te correspond"
+    subtitle={lieu}
+  >
+    <a slot="actions" class="btn btn--ghost" href="/services">
+      Voir tous les accompagnements
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M4 12h15M13 6l6 6-6 6"></path>
+      </svg>
+    </a>
+
+    <div class="grid grid--3">
+      <article class="card card--pad-l card--hover card--accent reveal">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M3 9.5v5M6 7v10M18 7v10M21 9.5v5M6 12h12"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Coaching individuel</h3>
+        <p class="card__text">
+          En tête-à-tête, chaque séance est menée avec toi&nbsp;: mise en place,
+          corrections en direct, intensité dosée selon ta forme du jour.
+        </p>
+        <ul class="list-check">
+          <li>Bilan de départ et objectifs posés noir sur blanc</li>
+          <li>Correction technique à chaque répétition qui compte</li>
+          <li>Programme réévalué à la fin de chaque cycle</li>
+        </ul>
+        <p class="card__foot">
+          <a class="btn btn--ghost btn--sm" href="/services" aria-label="En savoir plus sur le coaching individuel">En savoir plus</a>
+        </p>
+      </article>
+
+      <article class="card card--pad-l card--hover reveal" style="--reveal-delay: 90ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <rect x="3" y="6" width="12.5" height="12" rx="2.5"></rect>
+            <path d="M15.5 10.6l5.5-3v8.8l-5.5-3Z"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Coaching à distance</h3>
+        <p class="card__text">
+          Le même niveau d’exigence, où que tu t’entraînes&nbsp;: salle, maison ou parc. Séances
+          en visio et programme écrit détaillé.
+        </p>
+        <ul class="list-check">
+          <li>Plan d’entraînement détaillé, exercice par exercice</li>
+          <li>Séances guidées en visio et vidéos de référence</li>
+          <li>Retours sur tes vidéos d’exécution entre les rendez-vous</li>
+        </ul>
+        <p class="card__foot">
+          <a class="btn btn--ghost btn--sm" href="/services" aria-label="En savoir plus sur le coaching à distance">En savoir plus</a>
+        </p>
+      </article>
+
+      <article class="card card--pad-l card--hover reveal" style="--reveal-delay: 180ms">
+        <span class="icon-badge icon-badge--2" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <circle cx="12" cy="12" r="8.2"></circle>
+            <circle cx="12" cy="12" r="3.2"></circle>
+            <path d="M12 1.8v2.6M12 19.6v2.6M1.8 12h2.6M19.6 12h2.6"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Préparation physique &amp; remise en forme</h3>
+        <p class="card__text">
+          Retrouver du souffle, préparer une échéance sportive ou reprendre après une longue
+          pause&nbsp;: la charge de travail se construit progressivement.
+        </p>
+        <ul class="list-check">
+          <li>Renforcement, cardio et mobilité dans un même plan</li>
+          <li>Reprise progressive après un arrêt prolongé</li>
+          <li>Préparation d’une course ou d’un objectif de saison</li>
+        </ul>
+        <p class="card__foot">
+          <a class="btn btn--ghost btn--sm" href="/services" aria-label="En savoir plus sur la préparation physique et la remise en forme">En savoir plus</a>
+        </p>
+      </article>
+    </div>
+  </Section>
+
+  {/* ------------------------------------------------------------ LA MÉTHODE */}
+  <Section
+    id="methode"
+    class="section--rule"
+    eyebrow="La méthode"
+    title="Quatre étapes, aucune improvisation"
+    subtitle={`Le chemin est le même pour tout le monde${nb}; c’est son contenu qui change, parce qu’il est écrit pour toi.`}
+  >
+    <ol class="grid grid--4 grid--gap-s method" role="list">
+      <li class="card card--hover reveal method__item">
+        <div class="cluster cluster--xs method__head">
+          <span class="step-number" aria-hidden="true">1</span>
+          <p class="method__label">Étape 1</p>
+        </div>
+        <h3 class="card__title">Le bilan</h3>
+        <p class="card__text">
+          On prend le temps de tout poser&nbsp;: objectif, passé sportif, douleurs éventuelles,
+          alimentation, sommeil, créneaux disponibles. Rien ne commence avant que ce soit clair.
+        </p>
+      </li>
+
+      <li class="card card--hover reveal method__item" style="--reveal-delay: 90ms">
+        <div class="cluster cluster--xs method__head">
+          <span class="step-number" aria-hidden="true">2</span>
+          <p class="method__label">Étape 2</p>
+        </div>
+        <h3 class="card__title">Le programme sur mesure</h3>
+        <p class="card__text">
+          Tu repars avec un plan écrit&nbsp;: séances, ordre des exercices, repères de charge et
+          de récupération, plus des habitudes alimentaires simples et tenables.
+        </p>
+      </li>
+
+      <li class="card card--hover reveal method__item" style="--reveal-delay: 180ms">
+        <div class="cluster cluster--xs method__head">
+          <span class="step-number" aria-hidden="true">3</span>
+          <p class="method__label">Étape 3</p>
+        </div>
+        <h3 class="card__title">L’entraînement et le suivi</h3>
+        <p class="card__text">
+          On exécute, on corrige, on ajuste. Les charges montent quand la technique suit, et le
+          plan évolue avec ta forme, tes déplacements et tes imprévus.
+        </p>
+      </li>
+
+      <li class="card card--hover card--featured reveal method__item" style="--reveal-delay: 270ms">
+        <div class="cluster cluster--xs method__head">
+          <span class="step-number" aria-hidden="true">4</span>
+          <p class="method__label">Étape 4</p>
+        </div>
+        <h3 class="card__title">Les résultats, mesurés</h3>
+        <p class="card__text">
+          On compare avec ton point de départ&nbsp;: force, endurance, mobilité, aisance au
+          quotidien. Les progrès se constatent — ils ne se devinent pas.
+        </p>
+      </li>
+    </ol>
+  </Section>
+
+  {/* ---------------------------------------------------------- TÉMOIGNAGES */}
+  {/*
+    TODO propriétaire : remplace ces trois retours par de vrais témoignages
+    de tes clients (prénom seul, accord demandé au préalable).
+  */}
+  <Section
+    id="temoignages"
+    variant="alt"
+    eyebrow="Ils s’y sont remis"
+    title="Des parcours, pas des miracles"
+    subtitle="Trois retours de personnes accompagnées, avec leur point de départ et ce qu’elles en ont tiré."
+  >
+    <div class="grid grid--3">
+      <figure class="card card--pad-l reveal quote">
+        <blockquote class="quote__text">
+          <p>
+            «&nbsp;Je n’avais plus mis les pieds dans une salle depuis des années et je ne savais
+            pas par où commencer. Les premières séances étaient courtes, très guidées, et j’ai
+            arrêté d’avoir peur de mal faire. Aujourd’hui j’y vais sans me poser de question.&nbsp;»
+          </p>
+        </blockquote>
+        <figcaption class="quote__meta">
+          <span class="quote__name">Sarah</span>
+          <span class="quote__goal">Reprise du sport après une longue interruption</span>
+        </figcaption>
+      </figure>
+
+      <figure class="card card--pad-l reveal quote" style="--reveal-delay: 90ms">
+        <blockquote class="quote__text">
+          <p>
+            «&nbsp;Assis toute la journée, j’avais le bas du dos qui criait dès le mardi. Le
+            programme a commencé par la mobilité et le gainage avant la moindre barre. Les
+            journées au bureau sont redevenues supportables.&nbsp;»
+          </p>
+        </blockquote>
+        <figcaption class="quote__meta">
+          <span class="quote__name">Mehdi</span>
+          <span class="quote__goal">Moins de tensions lombaires au quotidien</span>
+        </figcaption>
+      </figure>
+
+      <figure class="card card--pad-l reveal quote" style="--reveal-delay: 180ms">
+        <blockquote class="quote__text">
+          <p>
+            «&nbsp;Je m’entraînais déjà, mais je tournais en rond avec les mêmes exercices. Avoir
+            une progression écrite et quelqu’un qui corrige ma technique a tout débloqué&nbsp;: ma
+            première traction stricte est tombée cet hiver.&nbsp;»
+          </p>
+        </blockquote>
+        <figcaption class="quote__meta">
+          <span class="quote__name">Claire</span>
+          <span class="quote__goal">Premier objectif de force atteint</span>
+        </figcaption>
+      </figure>
+    </div>
+  </Section>
+
+  {/* --------------------------------------------------------- CTA FINAL */}
+  <section class="section section--tight" aria-labelledby="cta-titre">
+    <div class="container">
+      <div class="callout reveal">
+        <div class="stack stack--m measure">
+          <p class="eyebrow">Premier pas</p>
+          <h2 id="cta-titre">On commence quand&nbsp;?</h2>
+          <p class="lead">
+            Une séance pour faire le point, poser un objectif réaliste et repartir avec une
+            direction claire. Aucun engagement, aucune pression&nbsp;— juste un plan à ta mesure.
+          </p>
+          <div class="cluster">
+            <a class="btn btn--primary btn--lg" href="/reservation">{site.booking.ctaLabel}</a>
+            <a class="btn btn--ghost btn--lg" href="/contact">Poser une question</a>
+          </div>
+          <p class="text-muted cta__note">{site.booking.ctaNote}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ------------------------------------------------------------------ HERO */
+  .hero {
+    padding-block-start: var(--space-xl);
+  }
+
+  .hero__note {
+    font-size: max(0.875rem, var(--step--1));
+    max-width: var(--measure-tight);
+  }
+
+  .hero__modes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .hero__visual {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--space-s);
+    padding: var(--space-m);
+    min-height: 0;
+    box-shadow: var(--shadow-l);
+  }
+
+  .hero__chart {
+    width: 100%;
+    height: auto;
+    fill: none;
+  }
+
+  .hero__visual-label {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: max(0.875rem, var(--step--1));
+    font-weight: 500;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+  }
+
+  /* Le bloc décoratif passe après le texte sur mobile, à droite en desktop. */
+  @media (min-width: 62em) {
+    .hero {
+      padding-block-start: var(--space-2xl);
+    }
+  }
+
+  /* --------------------------------------------------------------- MÉTHODE */
+  .method {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: none;
+  }
+
+  .method__item {
+    gap: var(--space-2xs);
+  }
+
+  .method__head {
+    --cluster-space: var(--space-2xs);
+    margin-bottom: var(--space-3xs);
+  }
+
+  .method__label {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: max(0.875rem, var(--step--1));
+    font-weight: 500;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+  }
+
+  /* ----------------------------------------------------------- TÉMOIGNAGES */
+  .quote {
+    gap: var(--space-m);
+    justify-content: space-between;
+  }
+
+  .quote__text {
+    margin: 0;
+    color: var(--c-text-soft);
+  }
+
+  .quote__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    padding-top: var(--space-s);
+    border-top: var(--border-1);
+  }
+
+  .quote__name {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--c-text);
+  }
+
+  .quote__goal {
+    font-size: var(--step-0);
+    line-height: var(--leading-normal);
+    color: var(--c-text-muted);
+  }
+
+  /* -------------------------------------------------------------- CTA FINAL */
+  .cta__note {
+    font-size: max(0.875rem, var(--step--1));
+  }
+</style>

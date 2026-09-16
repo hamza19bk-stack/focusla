@@ -1,0 +1,746 @@
+---
+/**
+ * Réservation — src/pages/reservation.astro
+ *
+ * Page de conversion du site : ce qui se passe après la réservation, ce qu'il faut
+ * prévoir pour la première séance, le module de réservation (widget Calendly ou
+ * encart de repli) et une courte FAQ.
+ *
+ * Le widget Calendly n'est chargé QUE si `site.booking.calendlyUrl` est renseigné
+ * dans src/data/site.ts (script + conteneur). Sinon : encart de repli e-mail /
+ * téléphone, zéro script externe.
+ */
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import { site } from '../data/site';
+
+/* Une valeur « TODO_… » est un gabarit : on ne l'affiche jamais telle quelle. */
+const affichable = (v: string) => v.trim() !== '' && !v.trim().startsWith('TODO_');
+const ville = affichable(site.contact.city) ? site.contact.city : '';
+
+/* Espace insécable pour les chaînes passées en props ou interpolées :
+   les entités HTML ne sont pas décodées dans une valeur d'attribut de composant. */
+const nb = ' ';
+
+/* Lien Calendly. Typé `string` pour que les deux branches du rendu restent
+   valides quand la valeur est encore vide dans src/data/site.ts. */
+const calendlyUrl: string = site.booking.calendlyUrl;
+const calendlyActif = calendlyUrl.trim() !== '';
+
+/* Coordonnées : toujours depuis site.ts, jamais en dur. */
+const emailHref = `mailto:${site.contact.email}`;
+const telHref = `tel:${site.contact.phoneHref}`;
+const whatsapp = site.social.whatsapp;
+
+/* E-mail pré-rempli : le visiteur n'a plus qu'à compléter ses disponibilités. */
+const sujetMail = `Demande de séance découverte — ${site.brand.name}`;
+const corpsMail = [
+  'Bonjour,',
+  '',
+  'Je souhaite réserver la séance découverte de 30 minutes.',
+  '',
+  '- Prénom :',
+  '- Objectif principal :',
+  '- Format souhaité (présentiel, visio, programme à distance) :',
+  '- Mes disponibilités (2 ou 3 créneaux) :',
+  '',
+  'Merci d’avance,',
+].join('\n');
+const emailReservationHref = `${emailHref}?subject=${encodeURIComponent(
+  sujetMail,
+)}&body=${encodeURIComponent(corpsMail)}`;
+
+/* Modalités d'accompagnement (chips), depuis la config. */
+const modes = [...site.contact.modes];
+
+/* Phrase de lieu : repli tant que la ville n'est pas renseignée. */
+const lieu = ville
+  ? `En présentiel à ${ville} ou en visio, au choix.`
+  : 'En présentiel ou en visio, au choix.';
+
+/* Étapes qui suivent la réservation. */
+const etapes = [
+  {
+    titre: 'Confirmation immédiate',
+    texte:
+      'Tu reçois la confirmation par e-mail avec la date, le format retenu et le point de rendez-vous ou le lien de visio. Un rappel part la veille.',
+  },
+  {
+    titre: 'Quelques questions avant',
+    texte:
+      'Un court questionnaire arrive dans la foulée : objectif, antécédents de blessure, niveau d’activité actuel, contraintes d’emploi du temps. Cinq minutes, pas plus.',
+  },
+  {
+    titre: 'Le bilan de 30 minutes',
+    texte:
+      'On fait le point ensemble : ce que tu veux atteindre, ce que ton quotidien permet vraiment, un test de mobilité léger et quelques repères de départ.',
+  },
+  {
+    titre: 'Ton plan de départ',
+    texte:
+      'Tu repars avec trois priorités concrètes et une proposition d’accompagnement adaptée. Tu décides ensuite, tranquillement, sans relance insistante.',
+  },
+];
+
+/* FAQ réservation — sert à la fois au rendu visible et au JSON-LD FAQPage. */
+const faq = [
+  {
+    q: `La séance découverte est-elle vraiment offerte${nb}?`,
+    r: `Oui. Trente minutes d’échange et de bilan, sans engagement et sans moyen de paiement demandé à la réservation. L’objectif est simple${nb}: vérifier qu’on avance dans la même direction avant de parler d’un accompagnement.`,
+  },
+  {
+    q: `Comment annuler un rendez-vous${nb}?`,
+    r: `Préviens au moins 24 heures à l’avance, par e-mail ou par téléphone${nb}; l’e-mail de confirmation contient aussi un lien d’annulation. Une annulation de dernière minute n’est jamais un drame, mais elle bloque un créneau pour quelqu’un d’autre.`,
+  },
+  {
+    q: `Je dois reporter, c’est possible${nb}?`,
+    r: `Sans problème, et sans frais. Utilise le lien de report reçu par e-mail ou écris-moi${nb}: on replace la séance sur un créneau qui te convient, en général dans la même semaine.`,
+  },
+  {
+    q: `Et si j’ai un imprévu ou du retard le jour J${nb}?`,
+    r: `Envoie un message dès que tu le sais. En cas de retard, la séance est maintenue sur le temps restant${nb}; au-delà de quinze minutes, on la reprogramme pour qu’elle garde son intérêt.`,
+  },
+  {
+    q: `Présentiel ou visio, qu’est-ce que je choisis${nb}?`,
+    r: `${lieu} Le bilan découverte fonctionne très bien à distance${nb}: il s’agit surtout d’échanger, d’observer quelques mouvements simples et de poser un cadre. Le format se change à tout moment par la suite.`,
+  },
+  {
+    q: `Je débute vraiment, ou je reprends après une blessure${nb}: c’est un problème${nb}?`,
+    r: `Au contraire, c’est exactement le bon moment pour en parler. Le bilan sert à adapter le point de départ. En cas de pathologie ou de suivi médical en cours, demande simplement l’avis de ton médecin avant de reprendre${nb}: le coaching complète un suivi médical, il ne le remplace pas.`,
+  },
+];
+
+/* Données structurées FAQPage (le JSON-LD LocalBusiness est déjà géré par Base.astro). */
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.r },
+  })),
+};
+
+const descriptionSeo = `Réserve ta séance découverte de 30 minutes avec ${site.brand.name}${nb}: bilan, objectifs et plan de départ. En présentiel, en visio ou à distance, sans engagement.`;
+---
+
+<Base title="Réservation" description={descriptionSeo} canonical="/reservation">
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+    {
+      calendlyActif && (
+        <Fragment>
+          {/* Widget de réservation Calendly : chargé uniquement si le lien est renseigné. */}
+          <link rel="preconnect" href="https://assets.calendly.com" />
+          <link rel="preconnect" href="https://calendly.com" />
+          <link rel="stylesheet" href="https://assets.calendly.com/assets/external/widget.css" />
+          <script is:inline defer src="https://assets.calendly.com/assets/external/widget.js" />
+        </Fragment>
+      )
+    }
+  </Fragment>
+
+  {/* ------------------------------------------------------------------ HERO */}
+  <section class="section section--tight booking-hero" aria-labelledby="hero-titre">
+    <div class="container">
+      <div class="grid grid--sidebar grid--gap-l items-start">
+        <div class="stack stack--m">
+          <p class="eyebrow animate-fade-up">Réservation</p>
+
+          <h1 id="hero-titre" class="animate-fade-up delay-1">
+            Ta première séance<br /><span class="mark">commence ici</span>
+          </h1>
+
+          <p class="lead animate-fade-up delay-2">
+            Trente minutes pour poser ton objectif, comprendre ton quotidien et repartir avec une
+            direction claire. Pas de test d’entrée, pas de discours de vente&nbsp;— un bilan honnête
+            et un plan de départ que tu peux tenir dès la semaine suivante.
+          </p>
+
+          <div class="cluster animate-fade-up delay-3">
+            <a class="btn btn--primary btn--lg" href="#creneaux">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <rect x="3.5" y="5" width="17" height="16" rx="2.5"></rect>
+                <path d="M8 3v4M16 3v4M3.5 10h17M9.5 15.5l1.9 1.9 3.6-3.9"></path>
+              </svg>
+              {calendlyActif ? 'Choisir un créneau' : 'Demander un créneau'}
+            </a>
+            <a class="btn btn--ghost btn--lg" href="/services">Voir les accompagnements</a>
+          </div>
+
+          <p class="text-muted booking-hero__note animate-fade-up delay-4">
+            {site.booking.ctaNote}
+          </p>
+
+          <ul class="cluster cluster--xs booking-hero__modes animate-fade-up delay-4" role="list">
+            {modes.map((mode) => <li class="chip chip--dot">{mode}</li>)}
+          </ul>
+        </div>
+
+        {/* Récapitulatif de la séance découverte. */}
+        <aside class="card card--accent card--pad-l booking-card animate-fade" aria-labelledby="recap-titre">
+          <p class="eyebrow eyebrow--plain">En résumé</p>
+          <h2 id="recap-titre" class="card__title">La séance découverte</h2>
+          <ul class="list-check">
+            <li>30 minutes d’échange et de bilan</li>
+            <li>{lieu}</li>
+            <li>Aucun matériel, aucune tenue imposée</li>
+            <li>Sans engagement, réponse sous 24&nbsp;h ouvrées</li>
+          </ul>
+          <p class="card__meta">
+            Un créneau ne te convient pas&nbsp;? Écris-moi, on trouve autre chose&nbsp;— y compris tôt
+            le matin ou en fin de journée.
+          </p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  {/* -------------------------------------------- APRÈS LA RÉSERVATION */}
+  <Section
+    id="apres"
+    class="section--rule"
+    eyebrow="Ce qui se passe ensuite"
+    title="De la réservation à ton plan"
+    subtitle={`Quatre étapes, aucune zone d’ombre${nb}: tu sais dès maintenant à quoi ressemble la suite.`}
+  >
+    <ol class="grid grid--4 grid--gap-s steps" role="list">
+      {
+        etapes.map((etape, i) => (
+          <li class="card steps__item reveal" style={`--reveal-delay: ${i * 90}ms`}>
+            <span class="step-number" aria-hidden="true">
+              {i + 1}
+            </span>
+            <h3 class="card__title steps__title">
+              <span class="sr-only">Étape {i + 1}&nbsp;: </span>
+              {etape.titre}
+            </h3>
+            <p class="card__text">{etape.texte}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </Section>
+
+  {/* ----------------------------------------------- PRÉPARER LA SÉANCE */}
+  <Section
+    id="preparer"
+    variant="alt"
+    eyebrow="Avant le rendez-vous"
+    title="Ce qu’il faut prévoir"
+    subtitle={`Rien de compliqué${nb}: cinq minutes de préparation suffisent pour que la séance serve vraiment à quelque chose.`}
+  >
+    <div class="grid grid--3 grid--gap-s">
+      <article class="card card--hover reveal">
+        <span class="icon-badge" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <path d="M8.5 3.5 12 6l3.5-2.5 4 2-1.5 5h-2v8h-8v-8h-2L4.5 5.5l4-2Z"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">Une tenue confortable</h3>
+        <p class="card__text">
+          Vêtements souples et chaussures de sport, même pour un simple bilan&nbsp;: on regarde
+          quelques mouvements de base pour situer ton point de départ.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 90ms">
+        <span class="icon-badge icon-badge--2" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <path d="M12 3s5 5.4 5 9a5 5 0 0 1-10 0c0-3.6 5-9 5-9Z"></path>
+            <path d="M9.5 13.2a2.7 2.7 0 0 0 2.5 2.6"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">De l’eau et de quoi noter</h3>
+        <p class="card__text">
+          Une gourde et un carnet — ou ton téléphone. Tu repars avec des repères précis, autant les
+          garder quelque part plutôt que de les oublier en chemin.
+        </p>
+      </article>
+
+      <article class="card card--hover reveal" style="--reveal-delay: 180ms">
+        <span class="icon-badge" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            focusable="false"
+          >
+            <rect x="2.5" y="5.5" width="13" height="13" rx="2.5"></rect>
+            <path d="m15.5 11 6-3.5v9l-6-3.5"></path>
+          </svg>
+        </span>
+        <h3 class="card__title">En visio&nbsp;: deux mètres libres</h3>
+        <p class="card__text">
+          Une connexion stable, le téléphone ou l’ordinateur calé en hauteur et un espace dégagé
+          devant toi. Le lien d’appel arrive avec la confirmation, rien à installer.
+        </p>
+      </article>
+    </div>
+
+    <div class="grid grid--sidebar-left grid--gap-l items-start prep-extra">
+      <div class="card card--flat card--pad-l reveal">
+        <h3 class="card__title">À avoir en tête</h3>
+        <ul class="list-check">
+          <li>Ton objectif formulé en une phrase, même imparfaite</li>
+          <li>Tes blessures, douleurs ou opérations passées</li>
+          <li>Une semaine type&nbsp;: horaires, déplacements, sommeil</li>
+          <li>Le nombre de séances que tu peux tenir, honnêtement</li>
+          <li>Ce que tu as déjà essayé — et pourquoi ça s’est arrêté</li>
+        </ul>
+      </div>
+
+      <div class="callout reveal" style="--reveal-delay: 90ms">
+        <div class="stack stack--s">
+          <p class="eyebrow eyebrow--plain">Bon à savoir</p>
+          <p class="text-soft">
+            Arrive cinq minutes en avance pour démarrer à l’heure. Évite un repas lourd dans
+            l’heure qui précède. Et si tu suis un traitement ou sors d’une blessure, demande l’avis
+            de ton médecin avant de reprendre&nbsp;: le coaching accompagne un suivi médical, il ne
+            s’y substitue jamais.
+          </p>
+        </div>
+      </div>
+    </div>
+  </Section>
+
+  {/* --------------------------------------------------- MODULE DE RÉSERVATION */}
+  <Section
+    id="creneaux"
+    eyebrow="Choisis ton moment"
+    title={calendlyActif ? 'Les créneaux disponibles' : 'Réserver ton créneau'}
+    subtitle={
+      calendlyActif
+        ? `Sélectionne le jour et l’heure qui t’arrangent${nb}: la confirmation part immédiatement par e-mail.`
+        : `La prise de rendez-vous en ligne arrive bientôt. En attendant, un message ou un appel suffit${nb}: réponse sous 24${nb}h ouvrées.`
+    }
+    width="narrow"
+  >
+    {
+      calendlyActif ? (
+        <div class="stack stack--s">
+          {/* Conteneur officiel Calendly (le script est chargé dans <head> via le slot). */}
+          <div
+            class="calendly-inline-widget booking-widget"
+            data-url={calendlyUrl}
+            data-resize="true"
+          />
+          <noscript>
+            <div class="card card--pad-l stack stack--s">
+              <h3 class="card__title">JavaScript est désactivé</h3>
+              <p class="card__text">
+                Le calendrier a besoin de JavaScript. Ouvre la page de réservation directement, ou
+                écris-moi&nbsp;: le rendez-vous se cale aussi bien par e-mail.
+              </p>
+              <div class="cluster">
+                <a
+                  class="btn btn--primary"
+                  href={calendlyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ouvrir le calendrier
+                </a>
+                <a class="btn btn--ghost" href={emailReservationHref}>
+                  Réserver par e-mail
+                </a>
+              </div>
+            </div>
+          </noscript>
+          <p class="text-muted booking-note">{site.booking.ctaNote}</p>
+        </div>
+      ) : (
+        /*
+          ENCART DE REPLI — aucun script externe n'est chargé.
+
+          POUR ACTIVER LA RÉSERVATION EN LIGNE :
+          ouvre src/data/site.ts et renseigne booking.calendlyUrl,
+          par exemple : calendlyUrl: 'https://calendly.com/focusla/seance-decouverte'.
+          Le widget Calendly et son script officiel s'afficheront automatiquement
+          à la place de cet encart, sans autre modification de code.
+        */
+        <div class="card card--accent card--pad-l stack stack--m booking-fallback">
+          <!--
+            POUR ACTIVER LA RESERVATION EN LIGNE (widget Calendly) :
+            ouvrir src/data/site.ts et renseigner booking.calendlyUrl, par exemple
+            calendlyUrl: 'https://calendly.com/focusla/seance-decouverte'.
+            Le script officiel Calendly et le calendrier interactif remplaceront
+            alors automatiquement cet encart. Aucune autre modification n'est necessaire.
+          -->
+          <span class="icon-badge icon-badge--round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              focusable="false"
+            >
+              <circle cx="12" cy="12" r="8.5" />
+              <path d="M12 7.5V12l3 2" />
+            </svg>
+          </span>
+
+          <div class="stack stack--xs">
+            <h3 class="card__title">Réservation en ligne bientôt disponible</h3>
+            <p class="card__text">
+              Le calendrier interactif arrive très vite. D’ici là, la réservation se fait de la
+              façon la plus directe qui soit&nbsp;: un e-mail ou un appel. Indique ton objectif, le
+              format souhaité et deux ou trois créneaux qui t’arrangent&nbsp;— je te confirme le
+              rendez-vous sous 24&nbsp;h ouvrées.
+            </p>
+          </div>
+
+          <div class="cluster">
+            <a class="btn btn--primary btn--lg" href={emailReservationHref}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <rect x="2.75" y="5" width="18.5" height="14" rx="2.5" />
+                <path d="m3.5 7.5 8.5 6 8.5-6" />
+              </svg>
+              Réserver par e-mail
+            </a>
+            <a class="btn btn--ghost btn--lg" href={telHref}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z" />
+              </svg>
+              Appeler
+            </a>
+            {whatsapp && (
+              <a
+                class="btn btn--quiet btn--lg"
+                href={whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp
+              </a>
+            )}
+          </div>
+
+          <ul class="stack stack--2xs booking-fallback__coords" role="list">
+            <li>
+              <span class="booking-fallback__label">E-mail</span>
+              <a href={emailHref}>{site.contact.email}</a>
+            </li>
+            <li>
+              <span class="booking-fallback__label">Téléphone</span>
+              <a href={telHref}>{site.contact.phone}</a>
+            </li>
+          </ul>
+
+          <p class="card__meta">{site.booking.ctaNote}</p>
+        </div>
+      )
+    }
+  </Section>
+
+  {/* ---------------------------------------------------------------- FAQ */}
+  <Section
+    id="faq"
+    variant="alt"
+    eyebrow="Questions fréquentes"
+    title="Avant de réserver"
+    subtitle={`Annulation, report, format${nb}: les réponses aux questions qui reviennent le plus souvent.`}
+    width="narrow"
+  >
+    <div class="stack stack--xs faq">
+      {
+        faq.map((item, i) => (
+          <details class="card card--flat faq__item reveal" style={`--reveal-delay: ${i * 60}ms`}>
+            <summary class="faq__summary">
+              <h3 class="faq__question">{item.q}</h3>
+              <span class="faq__icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  focusable="false"
+                >
+                  <path d="m6 9.5 6 6 6-6" />
+                </svg>
+              </span>
+            </summary>
+            <p class="faq__answer">{item.r}</p>
+          </details>
+        ))
+      }
+    </div>
+
+    <p class="text-muted faq__more">
+      Une question qui n’est pas là&nbsp;?{' '}
+      <a href="/contact">Pose-la directement</a>, la réponse arrive vite.
+    </p>
+  </Section>
+
+  {/* ------------------------------------------------------------ CTA FINAL */}
+  <section class="section section--tight" aria-labelledby="cta-titre">
+    <div class="container">
+      <div class="callout reveal">
+        <div class="stack stack--m measure">
+          <p class="eyebrow">Dernier détail</p>
+          <h2 id="cta-titre">Hésiter coûte plus cher qu’essayer</h2>
+          <p class="lead">
+            Trente minutes, sans engagement, pour savoir où tu en es et par quoi commencer. Si
+            l’accompagnement ne te correspond pas, tu repars quand même avec un plan clair.
+          </p>
+          <div class="cluster">
+            <a class="btn btn--primary btn--lg" href="#creneaux">{site.booking.ctaLabel}</a>
+            <a class="btn btn--ghost btn--lg" href="/contact">Poser une question</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ------------------------------------------------------------------ HERO */
+  .booking-hero {
+    padding-block-start: var(--space-xl);
+  }
+
+  .booking-hero__note {
+    font-size: max(0.875rem, var(--step--1));
+    max-width: var(--measure-tight);
+  }
+
+  .booking-hero__modes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .booking-card {
+    gap: var(--space-s);
+    box-shadow: var(--shadow-l);
+  }
+
+  @media (min-width: 62em) {
+    .booking-hero {
+      padding-block-start: var(--space-2xl);
+    }
+
+    .booking-card {
+      position: sticky;
+      top: calc(var(--header-h) + var(--space-s));
+    }
+  }
+
+  /* ---------------------------------------------------------------- ÉTAPES */
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .steps__item {
+    gap: var(--space-2xs);
+  }
+
+  .steps__title {
+    font-size: var(--step-1);
+  }
+
+  /* ------------------------------------------------------------ PRÉPARATION */
+  .prep-extra {
+    margin-top: var(--space-l);
+  }
+
+  /* -------------------------------------------------------------- WIDGET */
+  .booking-widget {
+    min-width: 0;
+    width: 100%;
+    min-height: 44rem;
+    border: var(--border-1);
+    border-radius: var(--radius-l);
+    background-color: var(--c-surface);
+    overflow: hidden;
+  }
+
+  .booking-note {
+    font-size: max(0.875rem, var(--step--1));
+  }
+
+  /* --------------------------------------------------------- ENCART DE REPLI */
+  .booking-fallback {
+    box-shadow: var(--shadow-l);
+  }
+
+  .booking-fallback__coords {
+    list-style: none;
+    padding: var(--space-s) 0 0;
+    margin: 0;
+    border-top: var(--border-1);
+  }
+
+  .booking-fallback__coords li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-3xs) var(--space-xs);
+  }
+
+  .booking-fallback__label {
+    font-family: var(--font-display);
+    font-size: max(0.875rem, var(--step--2));
+    font-weight: 500;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+    min-width: 7rem;
+  }
+
+  .booking-fallback__coords a {
+    color: var(--c-text);
+    text-decoration-color: var(--c-accent-dim);
+    text-underline-offset: 0.25em;
+    word-break: break-word;
+  }
+
+  .booking-fallback__coords a:hover {
+    color: var(--c-accent);
+  }
+
+  /* ------------------------------------------------------------------- FAQ */
+  .faq__item {
+    /* On repasse en `block` : un <details> en flex casse l'état fermé
+       dans plusieurs navigateurs (le contenu resterait visible). */
+    display: block;
+    padding: 0;
+    gap: 0;
+    transition: border-color var(--dur) var(--ease);
+  }
+
+  .faq__item[open] {
+    border-color: var(--c-border-strong);
+  }
+
+  .faq__summary {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-s);
+    padding: var(--space-s) var(--space-m);
+    min-height: 56px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .faq__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__summary:hover .faq__question {
+    color: var(--c-accent);
+  }
+
+  .faq__summary:focus-visible {
+    outline: 3px solid var(--c-accent-bright);
+    outline-offset: -3px;
+    border-radius: var(--radius-m);
+  }
+
+  .faq__question {
+    margin: 0;
+    font-size: var(--step-0);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-wide);
+    color: var(--c-text);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .faq__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-pill);
+    background-color: var(--c-surface-2);
+    color: var(--c-accent);
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .faq__icon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .faq__item[open] .faq__icon {
+    transform: rotate(180deg);
+  }
+
+  .faq__answer {
+    margin: 0;
+    padding: 0 var(--space-m) var(--space-m);
+    max-width: var(--measure);
+    color: var(--c-text-soft);
+  }
+
+  .faq__more {
+    margin-top: var(--space-m);
+    font-size: max(0.875rem, var(--step--1));
+  }
+
+  .faq__more a {
+    color: var(--c-accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq__icon,
+    .faq__item {
+      transition: none;
+    }
+  }
+</style>
